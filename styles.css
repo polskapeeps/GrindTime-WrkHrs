@@ -26,11 +26,11 @@ body {
 
 .container {
     max-width: 900px;
-    margin: 15px 15px auto;
+    margin: 15px auto;
     padding: 20px;
     background-color: var(--secondary-bg);
     border-radius: 8px;
-    box-shadow: 0 2px 10px var(--shadow-color);
+    box-shadow: 0 2px 50px var(--shadow-color);
 }
 
 h1, h2, h3 {
@@ -38,7 +38,7 @@ h1, h2, h3 {
     margin-top: 0;
 }
 h1 { text-align: center; margin-bottom: 1px; }
-h2 { margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
+h2 { margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 1px;}
 
 /* Utility Classes */
 .section {
@@ -72,7 +72,7 @@ button {
     color: var(--accent-text);
     background-color: var(--accent-color);
     transition: background-color 0.2s;
-    margin-right: 5px;
+    margin-top: 15px;
 }
 button:hover { filter: brightness(90%); }
 button.danger { background-color: var(--danger-color); }
