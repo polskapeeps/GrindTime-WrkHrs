@@ -26,7 +26,7 @@ body {
 
 .container {
     max-width: 900px;
-    margin: 20px auto;
+    margin: 15px 15px auto;
     padding: 20px;
     background-color: var(--secondary-bg);
     border-radius: 8px;
@@ -37,18 +37,18 @@ h1, h2, h3 {
     color: var(--primary-text);
     margin-top: 0;
 }
-h1 { text-align: center; margin-bottom: 20px; }
+h1 { text-align: center; margin-bottom: 1px; }
 h2 { margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
 
 /* Utility Classes */
 .section {
-    margin-bottom: 30px;
+    margin: 15px;
     padding: 20px;
     background-color: var(--tertiary-bg);
     border-radius: 5px;
 }
-.form-group { margin-bottom: 15px; }
-label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--secondary-text); }
+.form-group { margin-bottom: 10px; }
+label { display: block; margin-bottom: 1px; font-weight: bold; color: var(--secondary-text); }
 input[type="date"],
 input[type="time"],
 input[type="number"],
@@ -81,19 +81,19 @@ button.warning { background-color: var(--warning-color); color: #333;}
 button:disabled { background-color: var(--secondary-text); cursor: not-allowed;}
 
 /* Header */
-.header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;}
-#themeToggle { font-size: 0.8rem; padding: 5px 10px; }
+.header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;}
+/* #themeToggle { font-size: 0.8rem; padding: 5px 10px; } */
 
-/* Timer Section */
+/* Timer Section 
 .timer-display { font-size: 1.5rem; font-weight: bold; margin: 10px 0; text-align: center; }
-.timer-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;}
+.timer-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;} */
 
 /* Entries Table */
-#entriesTable { width: 100%; border-collapse: collapse; margin-top: 15px; }
+#entriesTable { width: 100%; border-collapse: collapse; margin-top: 10px; }
 #entriesTable th, #entriesTable td {
     border: 1px solid var(--border-color);
     padding: 10px;
-    text-align: left;
+    text-align: center;
     vertical-align: middle;
 }
 #entriesTable th { background-color: var(--tertiary-bg); font-weight: bold; }

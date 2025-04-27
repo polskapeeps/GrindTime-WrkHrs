@@ -1,14 +1,14 @@
 // ---=== Polyfills & Helpers ===---
-// Basic unique ID generator
+//--> Basic unique ID generator<--\\
 const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 
-// Format seconds into HH:MM:SS
-const formatTime = (seconds) => {
+//-->Format seconds into HH:MM:SS----not needed atm---
+/* const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
     return [hours, minutes, secs].map(v => v < 10 ? "0" + v : v).join(":");
-};
+}; */
 
 // Format date string YYYY-MM-DD to readable format
 const formatDate = (dateString) => {
@@ -17,7 +17,6 @@ const formatDate = (dateString) => {
     const dateObj = new Date(year, month - 1, day); // Month is 0-indexed
     return dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
 };
-
 
 // ---=== DOM Elements ===---
 const themeToggle = document.getElementById('themeToggle');
@@ -40,12 +39,12 @@ const totalHoursFilteredSpan = document.getElementById('totalHoursFiltered');
 const totalPayFilteredSpan = document.getElementById('totalPayFiltered');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const csvOutput = document.getElementById('csvOutput');
-// Timer elements
+/*//-->Timer elements<--\\
 const startTimerBtn = document.getElementById('startTimerBtn');
 const stopTimerBtn = document.getElementById('stopTimerBtn');
 const timerDisplay = document.getElementById('timerDisplay');
-const timerStartTimeInput = document.getElementById('timerStartTime');
-// Modal elements
+const timerStartTimeInput = document.getElementById('timerStartTime'); */
+//-->Modal elements<--\\
 const editModal = document.getElementById('editModal');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 
