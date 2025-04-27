@@ -17,7 +17,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   line-height: 1.6;
-  margin: 0;
+  margin: 10px;
   padding: 0;
   background-color: var(--primary-bg);
   color: var(--primary-text);
@@ -26,8 +26,8 @@ body {
 
 .container {
   max-width: 900px;
-  margin: 15px auto;
-  padding: 20px;
+  margin: 10px auto;
+  padding: 1px;
   background-color: var(--secondary-bg);
   border-radius: 8px;
   box-shadow: 0 2px 50px var(--shadow-color);
@@ -52,7 +52,7 @@ h2 {
 /* Utility Classes */
 .section {
   margin: 15px;
-  padding: 20px;
+  padding: 15px;
   background-color: var(--tertiary-bg);
   border-radius: 5px;
 }
