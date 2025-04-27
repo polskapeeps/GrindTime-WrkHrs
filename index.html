@@ -1,104 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Work Hours Calculator</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>My Work Hours</h1>
-        </div>
+      <div class="header">
+        <h1>My Work Hours</h1>
+      </div>
 
-        <div class="section">
-            <div class="form-group">
-                <label for="hourlyRate">Default Hourly Rate ($):</label>
-                <input type="number" id="hourlyRate" step="0.01" placeholder="Your rate here">
-            </div>
-            <button id="saveSettingsBtn" class="success">Save Settings</button>
+      <div class="section">
+        <div class="form-group">
+          <label for="hourlyRate">Default Hourly Rate ($):</label>
+          <input
+            type="number"
+            id="hourlyRate"
+            step="0.01"
+            placeholder="Your rate here"
+          />
         </div>
+        <button id="saveSettingsBtn" class="success">Save Settings</button>
+      </div>
 
-        <div class="section">
-            <h2>Log Time</h2>
-            <input type="hidden" id="editEntryId"> 
-            <div class="form-group">
-                <label for="entryDate">Date:</label>
-                <input type="date" id="entryDate">
-            </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <div class="form-group" style="flex: 1;">
-                    <label for="startTime">Start Time:</label>
-                    <input type="time" id="startTime">
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label for="endTime">End Time:</label>
-                    <input type="time" id="endTime">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="description">Description (Optional):</label>
-                <input type="text" id="description" placeholder="Task performed, client, etc.">
-            </div>
-            <button id="addEntryBtn">Add Manual Entry</button>
-            <button id="updateEntryBtn" style="display: none;" class="warning">Update Entry</button>
-            <button id="cancelEditBtn" style="display: none;">Cancel Edit</button>
+      <div class="section">
+        <h2>Log Time</h2>
+        <input type="hidden" id="editEntryId" />
+        <div class="form-group">
+          <label for="entryDate">Date:</label>
+          <input type="date" id="entryDate" />
         </div>
-
-        <div class="section">
-            <h2>Filter Past Entries</h2>
-            <div class="filter-group">
-                <div class="form-group">
-                    <label for="filterStartDate">From:</label>
-                    <input type="date" id="filterStartDate">
-                </div>
-                <div class="form-group">
-                    <label for="filterEndDate">To:</label>
-                    <input type="date" id="filterEndDate">
-                </div>
-                <button id="filterBtn">Apply Filter</button>
-                <button id="resetFilterBtn">Reset Filter</button>
-            </div>
-            <div class="totals-display">
-                <h3>Filtered Totals</h3>
-                <p>Total Hours: <span id="totalHoursFiltered">0.00</span></p>
-                <p>Total Pay: $<span id="totalPayFiltered">0.00</span></p>
-            </div>
-            <table id="entriesTable">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Start</th>
-                        <th>End</th>
-                        <th>Duration (hrs)</th>
-                        <th>Description</th>
-                        <th>Pay ($)</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="entriesTbody">
-                </tbody>
-            </table>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <div class="form-group" style="flex: 1">
+            <label for="startTime">Start Time:</label>
+            <input type="time" id="startTime" />
+          </div>
+          <div class="form-group" style="flex: 1">
+            <label for="endTime">End Time:</label>
+            <input type="time" id="endTime" />
+          </div>
         </div>
-
-        <div class="section">
-            <h2>Export Data</h2>
-            <button id="exportCsvBtn">Generate CSV for Filtered Entries</button>
-            <textarea id="csvOutput" readonly placeholder="CSV data will appear here. Copy and paste into a text file or spreadsheet."></textarea>
+        <div class="form-group">
+          <label for="description">Description (Optional):</label>
+          <input
+            type="text"
+            id="description"
+            placeholder="Task performed, client, etc."
+          />
         </div>
+        <button id="addEntryBtn">Add Manual Entry</button>
+        <button id="updateEntryBtn" style="display: none" class="warning">
+          Update Entry
+        </button>
+        <button id="cancelEditBtn" style="display: none">Cancel Edit</button>
+      </div>
 
+      <div class="section">
+        <h2>Filter Past Entries</h2>
+        <div class="filter-group">
+          <div class="form-group">
+            <label for="filterStartDate">From:</label>
+            <input type="date" id="filterStartDate" />
+          </div>
+          <div class="form-group">
+            <label for="filterEndDate">To:</label>
+            <input type="date" id="filterEndDate" />
+          </div>
+          <button id="filterBtn">Apply Filter</button>
+          <button id="resetFilterBtn">Reset Filter</button>
+        </div>
+        <div class="totals-display">
+          <h3>Filtered Totals</h3>
+          <p>Total Hours: <span id="totalHoursFiltered">0.00</span></p>
+          <p>Total Pay: $<span id="totalPayFiltered">0.00</span></p>
+        </div>
+        <table id="entriesTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Duration (hrs)</th>
+              <th>Description</th>
+              <th>Pay ($)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="entriesTbody"></tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Export Data</h2>
+        <button id="exportCsvBtn">Generate CSV for Filtered Entries</button>
+        <textarea
+          id="csvOutput"
+          readonly
+          placeholder="CSV data will appear here. Copy and paste into a text file or spreadsheet."
+        ></textarea>
+      </div>
     </div>
-    
+
     <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" id="modalCloseBtn">&times;</span>
-            <h2>Edit Entry</h2>
-            <p>Please use the "Manual Entry / Edit" form above to modify the details and click "Update Entry".</p>
-        </div>
+      <div class="modal-content">
+        <span class="modal-close" id="modalCloseBtn">&times;</span>
+        <h2>Edit Entry</h2>
+        <p>
+          Please use the "Manual Entry / Edit" form above to modify the details
+          and click "Update Entry".
+        </p>
+      </div>
     </div>
 
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
