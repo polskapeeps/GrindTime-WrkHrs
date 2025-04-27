@@ -51,7 +51,7 @@ const modalCloseBtn = document.getElementById('modalCloseBtn');
 
 // ---=== State Variables ===---
 let entries = [];
-let settings = { hourlyRate: 25.00, theme: 'light' }; // Default settings
+let settings = { hourlyRate: 20.00, theme: 'light' }; // Default settings
 let currentFilter = { startDate: null, endDate: null };
 let timerInterval = null;
 let timerSeconds = 0;
@@ -77,7 +77,7 @@ const loadData = () => {
         try { settings = JSON.parse(storedSettings); } catch (e) { console.error("Error parsing settings:", e); /* Keep defaults */ }
     }
     // Apply loaded settings
-    //hourlyRateInput.value = settings.hourlyRate || 20.00;
+    hourlyRateInput.value = settings.hourlyRate || 20.00;
     //document.documentElement.setAttribute('data-theme', settings.theme || 'light');
     //themeToggle.textContent = settings.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
 };
