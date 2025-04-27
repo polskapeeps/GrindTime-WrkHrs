@@ -19,7 +19,7 @@ const formatDate = (dateString) => {
 };
 
 // ---=== DOM Elements ===---
-const themeToggle = document.getElementById('themeToggle');
+//const themeToggle = document.getElementById('themeToggle');
 const hourlyRateInput = document.getElementById('hourlyRate');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const entryDateInput = document.getElementById('entryDate');
@@ -77,9 +77,9 @@ const loadData = () => {
         try { settings = JSON.parse(storedSettings); } catch (e) { console.error("Error parsing settings:", e); /* Keep defaults */ }
     }
     // Apply loaded settings
-    hourlyRateInput.value = settings.hourlyRate || 25.00;
-    document.documentElement.setAttribute('data-theme', settings.theme || 'light');
-    themeToggle.textContent = settings.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    //hourlyRateInput.value = settings.hourlyRate || 20.00;
+    //document.documentElement.setAttribute('data-theme', settings.theme || 'light');
+    //themeToggle.textContent = settings.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
 };
 
 // Save data to localStorage
@@ -405,4 +405,48 @@ const stopTimer = () => {
     startTimeInput.disabled = false; // Re-enable fields
     endTimeInput.disabled = false;
     entryDateInput.disabled = false;
-} */
+
+
+    
+    // Automatically add the entry? Or just pre-fill? Let's pre-fill.
+    // User can add description and click "Add Manual Entry"
+    alert(`Timer stopped at ${formatTime(timerSeconds)}. Please add description if needed and click 'Add Manual Entry'.`);
+    // Optional: Automatically add entry here
+    // handleAddEntry();
+}; */
+
+
+// ---=== Initialization ===---
+const initializeApp = () => {
+    loadData(); // Load saved data first
+    clearForm(); // Set default date and button states
+    renderEntries(); // Render initial view
+
+    // Attach persistent event listeners
+    saveSettingsBtn.addEventListener('click', handleSaveSettings);
+    addEntryBtn.addEventListener('click', handleAddEntry);
+    updateEntryBtn.addEventListener('click', handleUpdateEntry);
+    cancelEditBtn.addEventListener('click', clearForm);
+    filterBtn.addEventListener('click', handleFilter);
+    resetFilterBtn.addEventListener('click', handleResetFilter);
+    exportCsvBtn.addEventListener('click', handleExportCsv);
+    //themeToggle.addEventListener('click', handleThemeToggle);
+    startTimerBtn.addEventListener('click', startTimer);
+    stopTimerBtn.addEventListener('click', stopTimer);
+
+    // Basic modal close functionality if used
+    if (modalCloseBtn) {
+        modalCloseBtn.addEventListener('click', () => {
+            if (editModal) editModal.style.display = "none";
+        });
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (editModal && event.target == editModal) {
+            editModal.style.display = "none";
+        }
+    });
+};
+
+// Start the application
+document.addEventListener('DOMContentLoaded', initializeApp);
