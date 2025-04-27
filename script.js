@@ -353,7 +353,7 @@ const handleExportCsv = () => {
     alert("CSV data generated below. Select all (Ctrl+A or Cmd+A) and copy (Ctrl+C or Cmd+C) to paste into a spreadsheet or text file.");
 };
 
-// Handle theme toggle
+/* // Handle theme toggle
 const handleThemeToggle = () => {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -361,9 +361,9 @@ const handleThemeToggle = () => {
     settings.theme = newTheme;
     themeToggle.textContent = newTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
     saveData();
-};
+}; */
 
-// --- Timer Functionality ---
+/* // --- Timer Functionality ---
 const startTimer = () => {
     if (timerInterval) return; // Already running
 
@@ -405,4 +405,4 @@ const stopTimer = () => {
     startTimeInput.disabled = false; // Re-enable fields
     endTimeInput.disabled = false;
     entryDateInput.disabled = false;
-}
+} */
