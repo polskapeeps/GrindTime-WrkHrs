@@ -22,6 +22,7 @@ const formatDate = (dateString) => {
 //const themeToggle = document.getElementById('themeToggle');
 const hourlyRateInput = document.getElementById('hourlyRate');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const settingsStatusSpan = document.getElementById('settingsStatus'); // <-- Add this line
 const entryDateInput = document.getElementById('entryDate');
 const startTimeInput = document.getElementById('startTime');
 const endTimeInput = document.getElementById('endTime');
