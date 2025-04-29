@@ -201,6 +201,25 @@ const handleSaveSettings = () => {
     showStatusMessage("Settings saved!");
 };
 
+// Show a status message that fades after a few seconds
+const showStatusMessage = (message, type = 'success') => {
+    if (!settingsStatusSpan) return;
+    
+    // Clear any existing timeout
+    if (settingsStatusTimeout) {
+        clearTimeout(settingsStatusTimeout);
+    }
+    
+    // Set the message and show it
+    settingsStatusSpan.textContent = message;
+    settingsStatusSpan.className = `status-message ${type} show`;
+    
+    // Hide after 3 seconds
+    settingsStatusTimeout = setTimeout(() => {
+        settingsStatusSpan.classList.remove('show');
+    }, 3000);
+};
+
 const handleAddEntry = () => {
     const date = entryDateInput.value;
     const start = startTimeInput.value;
