@@ -125,7 +125,7 @@ button:disabled {
 }
 
 .status-message.show {
-  opacity: 1; /* Make visible */
+  opacity: 1; 
 }
 
 .status-message.success {
@@ -135,7 +135,6 @@ button:disabled {
 }
 
 .status-message.error {
-   /* Optional: Add styles for error messages if needed later */
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
