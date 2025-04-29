@@ -53,6 +53,7 @@ const modalCloseBtn = document.getElementById('modalCloseBtn');
 // ---=== State Variables ===---
 let entries = [];
 let settings = { hourlyRate: 20.00, theme: 'light' }; // Default settings
+let settingsStatusTimeout = null; // <-- Add this to manage the timeout
 let currentFilter = { startDate: null, endDate: null };
 let timerInterval = null;
 let timerSeconds = 0;
@@ -191,13 +192,13 @@ const clearForm = () => {
 const handleSaveSettings = () => {
     const rate = parseFloat(hourlyRateInput.value);
     if (isNaN(rate) || rate < 0) {
-        alert("Please enter a valid non-negative hourly rate.");
+       showStatusMessage("Please enter a valid hourly rate.", 'error');
         return;
     }
     settings.hourlyRate = rate.toFixed(2); // Store as string with 2 decimals
     saveData();
     renderEntries(); // Re-render in case pay changed
-    alert("Settings saved!");
+    showStatusMessage("Settings saved!");
 };
 
 const handleAddEntry = () => {
@@ -422,6 +423,12 @@ const initializeApp = () => {
     loadData(); // Load saved data first
     clearForm(); // Set default date and button states
     renderEntries(); // Render initial view
+
+    // Make sure the status message is initially hidden
+    if (settingsStatusSpan) {
+        settingsStatusSpan.textContent = '';
+        settingsStatusSpan.classList.remove('show');
+    }
 
     // Attach persistent event listeners
     saveSettingsBtn.addEventListener('click', handleSaveSettings);
