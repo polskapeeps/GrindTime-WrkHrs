@@ -24,14 +24,21 @@
             placeholder="Your rate here"
           />
         </div>
-        <div style="text-align: center;">
+        <div style="text-align: center">
           <button id="saveSettingsBtn" class="success">Save</button>
           <span id="settingsStatus" class="status-message"></span>
         </div>
       </div>
-
       <div class="section">
         <h2>Log Time</h2>
+        <div class="timer-controls">
+          <button id="startTimerBtn" class="success">Starts Timer</button>
+          <button id="stopTimerBtn" class="danger" disabled>Stop Timer</button>
+        </div>
+        <div id="timerDisplay" class="timer-display">00:00:00</div>
+        <input type="hidden" id="timerStartTime" />
+        <hr style="margin: 20px 0; border-color: var(--border-color)" />
+
         <input type="hidden" id="editEntryId" />
         <div class="form-group">
           <label for="entryDate">Date:</label>
@@ -122,3 +129,4 @@
     <script src="script.js"></script>
   </body>
 </html>
+
