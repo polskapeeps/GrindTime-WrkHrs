@@ -3,12 +3,12 @@
 const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 
 //-->Format seconds into HH:MM:SS----not needed atm---
-/* const formatTime = (seconds) => {
+const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
     return [hours, minutes, secs].map(v => v < 10 ? "0" + v : v).join(":");
-}; */
+};
 
 // Format date string YYYY-MM-DD to readable format
 const formatDate = (dateString) => {
@@ -40,11 +40,11 @@ const totalHoursFilteredSpan = document.getElementById('totalHoursFiltered');
 const totalPayFilteredSpan = document.getElementById('totalPayFiltered');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const csvOutput = document.getElementById('csvOutput');
-/*//-->Timer elements<--\\
+//-->Timer elements<--\\
 const startTimerBtn = document.getElementById('startTimerBtn');
 const stopTimerBtn = document.getElementById('stopTimerBtn');
 const timerDisplay = document.getElementById('timerDisplay');
-const timerStartTimeInput = document.getElementById('timerStartTime'); */
+const timerStartTimeInput = document.getElementById('timerStartTime'); 
 //-->Modal elements<--\\
 const editModal = document.getElementById('editModal');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
@@ -384,7 +384,7 @@ const handleThemeToggle = () => {
     saveData();
 }; */
 
-/* // --- Timer Functionality ---
+// --- Timer Functionality ---
 const startTimer = () => {
     if (timerInterval) return; // Already running
 
@@ -434,7 +434,7 @@ const stopTimer = () => {
     alert(`Timer stopped at ${formatTime(timerSeconds)}. Please add description if needed and click 'Add Manual Entry'.`);
     // Optional: Automatically add entry here
     // handleAddEntry();
-}; */
+};
 
 
 // ---=== Initialization ===---
