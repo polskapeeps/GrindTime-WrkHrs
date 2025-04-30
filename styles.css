@@ -28,7 +28,7 @@ body {
 }
 
 .container {
-  max-width: 900px;
+  max-width: 600px;
   margin: 10px auto;
   padding: 1px;
   background-color: var(--secondary-bg);
