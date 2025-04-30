@@ -42,10 +42,12 @@ h3 {
   color: var(--primary-text);
   margin-top: 0;
 }
+
 h1 {
   text-align: center;
   margin-bottom: 1px;
 }
+
 h2 {
   margin-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
@@ -59,21 +61,25 @@ h2 {
   background-color: var(--tertiary-bg);
   border-radius: 5px;
 }
+
 .form-group {
   margin-bottom: 10px;
 }
+
 label {
   display: block;
   margin-bottom: 1px;
   font-weight: bold;
   color: var(--secondary-text);
 }
+
 input[type="date"],
 input[type="time"],
 input[type="number"],
 input[type="text"],
 textarea {
-  width: calc(100% - 20px); /* Adjust for padding */
+  width: calc(100% - 20px);
+  /* Adjust for padding */
   padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -81,9 +87,11 @@ textarea {
   color: var(--primary-text);
   font-size: 1rem;
 }
+
 textarea {
   resize: vertical;
 }
+
 button {
   padding: 10px 15px;
   border: none;
@@ -95,19 +103,24 @@ button {
   transition: background-color 0.2s;
   margin-top: 15px;
 }
+
 button:hover {
   filter: brightness(90%);
 }
+
 button.danger {
   background-color: var(--danger-color);
 }
+
 button.success {
   background-color: var(--success-color);
 }
+
 button.warning {
   background-color: var(--warning-color);
   color: #333;
 }
+
 button:disabled {
   background-color: var(--secondary-text);
   cursor: not-allowed;
@@ -115,30 +128,34 @@ button:disabled {
 
 /*status message*/
 .status-message {
-  display: inline-block; /* Or block if you want it on its own line */
+  display: inline-block;
+  /* Or block if you want it on its own line */
   margin-left: 10px;
   padding: 5px 10px;
   border-radius: 4px;
   font-size: 0.9em;
-  opacity: 0; /* Start hidden */
-  transition: opacity 0.5s ease-in-out; /* Smooth fade effect */
+  opacity: 0;
+  /* Start hidden */
+  transition: opacity 0.5s ease-in-out;
+  /* Smooth fade effect */
 }
 
 .status-message.show {
-  opacity: 1; 
+  opacity: 1;
 }
 
 .status-message.success {
-  background-color: var(--success-bg, #d4edda); /* Use CSS variables if defined, else fallback */
+  background-color: var(--success-bg, #d4edda);
+  /* Use CSS variables if defined, else fallback */
   color: var(--success-text, #155724);
   border: 1px solid var(--success-border, #c3e6cb);
 }
 
 .status-message.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
 
 /* Header */
 .header {
@@ -162,6 +179,7 @@ button:disabled {
   border-collapse: collapse;
   margin-top: 10px;
 }
+
 #entriesTable th,
 #entriesTable td {
   border: 1px solid var(--border-color);
@@ -169,10 +187,12 @@ button:disabled {
   text-align: center;
   vertical-align: middle;
 }
+
 #entriesTable th {
   background-color: var(--tertiary-bg);
   font-weight: bold;
 }
+
 #entriesTable td .description {
   font-size: 0.9em;
   color: var(--secondary-text);
@@ -182,6 +202,7 @@ button:disabled {
   text-overflow: ellipsis;
   display: inline-block;
 }
+
 #entriesTable .actions button {
   padding: 5px 8px;
   font-size: 0.8rem;
@@ -196,11 +217,13 @@ button:disabled {
   flex-wrap: wrap;
   margin-bottom: 15px;
 }
+
 .totals-display p {
   font-size: 1.1em;
   font-weight: bold;
   margin: 5px 0;
 }
+
 #totalHoursFiltered,
 #totalPayFiltered {
   color: var(--success-color);
@@ -221,7 +244,8 @@ button:disabled {
 
 /* Modal (for editing) */
 .modal {
-  display: none; /* Hidden by default */
+  display: none;
+  /* Hidden by default */
   position: fixed;
   z-index: 1000;
   left: 0;
@@ -231,6 +255,7 @@ button:disabled {
   overflow: auto;
   background-color: rgba(0, 0, 0, 0.6);
 }
+
 .modal-content {
   background-color: var(--secondary-bg);
   margin: 10% auto;
@@ -241,6 +266,7 @@ button:disabled {
   border-radius: 8px;
   position: relative;
 }
+
 .modal-close {
   color: var(--secondary-text);
   position: absolute;
@@ -250,6 +276,7 @@ button:disabled {
   font-weight: bold;
   cursor: pointer;
 }
+
 .modal-close:hover,
 .modal-close:focus {
   color: var(--primary-text);
@@ -262,34 +289,42 @@ button:disabled {
     flex-direction: column;
     align-items: stretch;
   }
+
   #entriesTable th,
   #entriesTable td {
     padding: 8px;
   }
+
   #entriesTable .description {
     max-width: 100px;
   }
+
   .modal-content {
     width: 90%;
     margin: 20% auto;
   }
 }
+
 @media (max-width: 480px) {
   #entriesTable {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
   }
+
   h1 {
     font-size: 1.8rem;
   }
+
   .section {
     padding: 15px;
   }
+
   button {
     padding: 8px 12px;
     font-size: 0.9rem;
   }
+
   #entriesTable .actions button {
     padding: 4px 6px;
     font-size: 0.7rem;
