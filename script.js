@@ -45,11 +45,11 @@ const totalHoursFilteredSpan = document.getElementById("totalHoursFiltered");
 const totalPayFilteredSpan = document.getElementById("totalPayFiltered");
 const exportCsvBtn = document.getElementById("exportCsvBtn");
 const csvOutput = document.getElementById("csvOutput");
-//-->Timer elements<--\\
+/*/-->Timer elements<--\\
 const startTimerBtn = document.getElementById("startTimerBtn");
 const stopTimerBtn = document.getElementById("stopTimerBtn");
 const timerDisplay = document.getElementById("timerDisplay");
-const timerStartTimeInput = document.getElementById("timerStartTime");
+const timerStartTimeInput = document.getElementById("timerStartTime");*/
 //-->Modal elements<--\\
 const editModal = document.getElementById("editModal");
 const modalCloseBtn = document.getElementById("modalCloseBtn");
@@ -431,7 +431,7 @@ const handleThemeToggle = () => {
     saveData();
 }; */
 
-// --- Timer Functionality ---
+/*// --- Timer Functionality ---
 const startTimer = () => {
   if (timerInterval) return; // Already running
 
@@ -489,7 +489,7 @@ const stopTimer = () => {
   );
   // Optional: Automatically add entry here
   // handleAddEntry();
-};
+};*/
 
 // ---=== Initialization ===---
 const initializeApp = () => {
@@ -512,8 +512,8 @@ const initializeApp = () => {
   resetFilterBtn.addEventListener("click", handleResetFilter);
   exportCsvBtn.addEventListener("click", handleExportCsv);
   //themeToggle.addEventListener('click', handleThemeToggle);
-  startTimerBtn.addEventListener("click", startTimer);
-  stopTimerBtn.addEventListener("click", stopTimer);
+  //startTimerBtn.addEventListener("click", startTimer);
+  //stopTimerBtn.addEventListener("click", stopTimer);
 
   // Basic modal close functionality if used
   if (modalCloseBtn) {
