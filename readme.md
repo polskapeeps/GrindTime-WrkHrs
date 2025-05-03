@@ -1,4 +1,4 @@
-# Work Hours Calculator
+# Grind Time(work hours)
 
 A simple, browser-based time tracking application that helps you log your work hours, calculate earnings, and export timesheets.
 
