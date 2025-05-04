@@ -2,8 +2,6 @@
 
 A simple, browser-based time tracking application that helps you log your work hours, calculate earnings, and export timesheets.
 
-![Work Hours Calculator Screenshot](assets/screenshots/screenshot.png)
-
 ## Features
 
 - **Time Entry**: Log your work hours with start and end times
