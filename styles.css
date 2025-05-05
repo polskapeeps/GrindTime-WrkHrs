@@ -163,6 +163,35 @@ input::placeholder {
   margin-top: var(--spacing-unit);
 }
 
+.rate-setting-group {
+  display: flex;
+  align-items: center; /* Vertically align label, input, button */
+  gap: calc(var(--spacing-unit) * 0.5); /* Space between elements */
+  flex-wrap: wrap; /* Allow wrapping on very small screens */
+  margin-bottom: var(--spacing-unit); /* Space below the rate row */
+}
+
+.rate-setting-group label {
+  margin-bottom: 0; /* Remove bottom margin as flex handles alignment */
+  flex-shrink: 0; /* Prevent label from shrinking */
+}
+
+.rate-setting-group input#hourlyRate {
+  width: auto; /* Override width: 100% */
+  flex: 1 1 80px; /* Allow growing, basis of 80px, allow shrinking */
+  max-width: 120px; /* Prevent it from becoming too wide */
+  min-height: 40px; /* Slightly smaller height to fit inline better */
+  padding: calc(var(--spacing-unit) * 0.5);
+}
+
+.rate-setting-group .btn-sm {
+  /* Make save button slightly smaller */
+  padding: calc(var(--spacing-unit) * 0.4) calc(var(--spacing-unit) * 0.8);
+  font-size: 0.85rem;
+  min-height: 40px; /* Match input height */
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
 /* ---=== Buttons ===--- */
 .btn {
   padding: calc(var(--spacing-unit) * 0.6) calc(var(--spacing-unit) * 1);
@@ -227,6 +256,12 @@ input::placeholder {
   opacity: 0;
   transition: opacity 0.5s ease-in-out;
   margin-left: calc(var(--spacing-unit) * 0.5); /* Space from button */
+}
+rate-setting-group .status-message {
+  margin-left: 0;
+  flex: 1 1 auto;
+  text-align: right;
+  min-width: 100px;
 }
 .status-message.show {
   opacity: 1;
@@ -386,7 +421,20 @@ input::placeholder {
     max-width: 100px;
   }
 }
-
+@media (max-width: 480px) {
+  .rate-setting-group {
+    gap: calc(var(--spacing-unit) * 0.4);
+  }
+  .rate-setting-group input#hourlyRate {
+    max-width: 100px; /* Further reduce max width if needed */
+  }
+  .rate-setting-group .status-message {
+    /* On small screens, maybe let it wrap below */
+    flex-basis: 100%; /* Make it take full width on next line */
+    text-align: left; /* Align left when wrapped */
+    margin-top: calc(var(--spacing-unit) * 0.3);
+  }
+}
 @media (max-width: 400px) {
   html {
     font-size: 14px;
