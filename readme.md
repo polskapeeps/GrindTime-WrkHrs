@@ -1,4 +1,4 @@
-# Grind Time(Work Hours)
+# Grind Time (*Work Hours*)
 
 A simple, browser-based time tracking application that helps you log your work hours, calculate earnings, and export timesheets.
 
@@ -7,10 +7,11 @@ A simple, browser-based time tracking application that helps you log your work h
 - **Time Entry**: Log your work hours with start and end times
 - **Earnings Calculation**: Automatically calculates earnings based on your hourly rate
 - **Filterable History**: Filter your time entries by date range
-- **Data Export**: Generate CSV data for easy export to spreadsheets
-- **Local Storage**: All data is stored locally in your browser
+- **Data Export**: Generate and download CSV data for easy export to spreadsheets
+- **Local Storage**: All data is stored locally in your browser for privacy
 - **Responsive Design**: Works on desktop and mobile devices
-- **Dark Mode**: Easy on the eyes with a dark color scheme
+- **Dark Theme**: Modern dark-themed interface that's easy on the eyes
+- **Overnight Shift Support**: Properly handles shifts that span across midnight
 
 ## Getting Started
 
@@ -22,7 +23,7 @@ No installation required! This is a client-side only application that runs entir
 2. Open `index.html` in any modern web browser
 3. Start tracking your time!
 
-Alternatively, you can access the live version at: [your-github-pages-url-here]
+Alternatively, you can access the application by hosting it on any static web server or GitHub Pages.
 
 ### Usage
 
@@ -30,7 +31,7 @@ Alternatively, you can access the live version at: [your-github-pages-url-here]
 2. **Log Time**: Fill in the date, start time, end time, and optional description, then click "Add Entry"
 3. **View History**: All your entries appear in the table below, sorted by date (newest first)
 4. **Filter Entries**: Use the date filters to view entries within a specific time period
-5. **Export Data**: Generate a CSV of your filtered entries for use in spreadsheets
+5. **Export Data**: Generate a CSV of your filtered entries for use in spreadsheets with proper filenames based on your date range
 
 ## Data Privacy
 
@@ -46,8 +47,8 @@ The application uses CSS variables for theming. You can modify the colors in the
 
 ```css
 :root {
-  --primary-bg: #212529;
-  --secondary-bg: #343a40;
+  --primary-bg: #1a1a1a;
+  --secondary-bg: #2c2c2c;
   /* Additional color variables... */
 }
 ```
@@ -67,6 +68,13 @@ Works with all modern browsers that support:
 - localStorage API
 - CSS Grid and Flexbox
 
+## Mobile Support
+
+The application is designed with mobile users in mind:
+- Responsive layout that adapts to different screen sizes
+- Touch-friendly controls with adequately sized buttons
+- Can be added to your home screen as a progressive web app
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -78,5 +86,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Built with vanilla JavaScript, HTML, and CSS
-- Icons from [source-of-icons-if-used]
 - Inspired by the need for a simple, privacy-focused time tracking solution
