@@ -1,533 +1,523 @@
-// ---=== Polyfills & Helpers ===---
-//--> Basic unique ID generator<--\\
-const generateId = () => "_" + Math.random().toString(36).substr(2, 9);
+document.addEventListener("DOMContentLoaded", () => {
+  // ---=== DOM Elements ===---
+  const hourlyRateInput = document.getElementById("hourlyRate");
+  const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+  const settingsStatusSpan = document.getElementById("settingsStatus");
 
-//-->Format seconds into HH:MM:SS----not needed atm---
-const formatTime = (seconds) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  return [hours, minutes, secs].map((v) => (v < 10 ? "0" + v : v)).join(":");
-};
+  const entryFormCard = document.getElementById("entryFormCard");
+  const entryDateInput = document.getElementById("entryDate");
+  const startTimeInput = document.getElementById("startTime");
+  const endTimeInput = document.getElementById("endTime");
+  const descriptionInput = document.getElementById("description");
+  const addEntryBtn = document.getElementById("addEntryBtn");
+  const updateEntryBtn = document.getElementById("updateEntryBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const editEntryIdInput = document.getElementById("editEntryId"); // Hidden input
+  const entryStatusSpan = document.getElementById("entryStatus");
 
-// Format date string YYYY-MM-DD to readable format
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  const [year, month, day] = dateString.split("-");
-  const dateObj = new Date(year, month - 1, day); // Month is 0-indexed
-  return dateObj.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    weekday: "short",
-  });
-};
+  const entriesTbody = document.getElementById("entriesTbody");
+  const noEntriesMessage = document.getElementById("noEntriesMessage");
 
-// ---=== DOM Elements ===---
-//const themeToggle = document.getElementById('themeToggle');
-const hourlyRateInput = document.getElementById("hourlyRate");
-const saveSettingsBtn = document.getElementById("saveSettingsBtn");
-const settingsStatusSpan = document.getElementById("settingsStatus"); // <-- Add this line
-const entryDateInput = document.getElementById("entryDate");
-const startTimeInput = document.getElementById("startTime");
-const endTimeInput = document.getElementById("endTime");
-const descriptionInput = document.getElementById("description");
-const addEntryBtn = document.getElementById("addEntryBtn");
-const updateEntryBtn = document.getElementById("updateEntryBtn");
-const cancelEditBtn = document.getElementById("cancelEditBtn");
-const editEntryIdInput = document.getElementById("editEntryId");
-const entriesTbody = document.getElementById("entriesTbody");
-const filterStartDateInput = document.getElementById("filterStartDate");
-const filterEndDateInput = document.getElementById("filterEndDate");
-const filterBtn = document.getElementById("filterBtn");
-const resetFilterBtn = document.getElementById("resetFilterBtn");
-const totalHoursFilteredSpan = document.getElementById("totalHoursFiltered");
-const totalPayFilteredSpan = document.getElementById("totalPayFiltered");
-const exportCsvBtn = document.getElementById("exportCsvBtn");
-const csvOutput = document.getElementById("csvOutput");
-/*/-->Timer elements<--\\
-const startTimerBtn = document.getElementById("startTimerBtn");
-const stopTimerBtn = document.getElementById("stopTimerBtn");
-const timerDisplay = document.getElementById("timerDisplay");
-const timerStartTimeInput = document.getElementById("timerStartTime");*/
-//-->Modal elements<--\\
-const editModal = document.getElementById("editModal");
-const modalCloseBtn = document.getElementById("modalCloseBtn");
+  const filterStartDateInput = document.getElementById("filterStartDate");
+  const filterEndDateInput = document.getElementById("filterEndDate");
+  const filterBtn = document.getElementById("filterBtn");
+  const resetFilterBtn = document.getElementById("resetFilterBtn");
+  const totalHoursFilteredSpan = document.getElementById("totalHoursFiltered");
+  const totalPayFilteredSpan = document.getElementById("totalPayFiltered");
 
-// ---=== State Variables ===---
-let entries = [];
-let settings = { hourlyRate: 20.0, theme: "light" }; // Default settings
-let settingsStatusTimeout = null; // <-- Add this to manage the timeout
-let currentFilter = { startDate: null, endDate: null };
-let timerInterval = null;
-let timerSeconds = 0;
+  const exportCsvBtn = document.getElementById("exportCsvBtn");
+  const exportStatusSpan = document.getElementById("exportStatus");
 
-// ---=== localStorage Keys ===---
-const ENTRIES_STORAGE_KEY = "advTimeTrackerEntries";
-const SETTINGS_STORAGE_KEY = "advTimeTrackerSettings";
+  // ---=== State Variables ===---
+  let entries = [];
+  let settings = { hourlyRate: 20.0 }; // Default rate
+  let currentFilter = { startDate: null, endDate: null };
+  let statusTimeout = null; // For managing status message display
 
-// ---=== Core Logic Functions ===---
+  // ---=== localStorage Keys ===---
+  const ENTRIES_STORAGE_KEY = "grindTimeEntries_v1"; // Renamed key slightly
+  const SETTINGS_STORAGE_KEY = "grindTimeSettings_v1";
 
-// Load data from localStorage
-const loadData = () => {
-  const storedEntries = localStorage.getItem(ENTRIES_STORAGE_KEY);
-  const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  // ---=== Helper Functions ===---
+  const generateId = () => "_" + Math.random().toString(36).substr(2, 9);
 
-  if (storedEntries) {
+  // Formats YYYY-MM-DD to a more readable format like "Wed, May 3"
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    // Use UTC to avoid timezone issues with date-only strings
+    const [year, month, day] = dateString.split("-").map(Number);
+    const dateObj = new Date(Date.UTC(year, month - 1, day));
+    return dateObj.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC", // Specify UTC timezone
+    });
+  };
+
+  // Show status message and hide after a delay
+  const showStatusMessage = (
+    element,
+    message,
+    type = "success",
+    duration = 3000
+  ) => {
+    if (!element) return;
+    clearTimeout(statusTimeout); // Clear previous timeout if any
+    element.textContent = message;
+    element.className = `status-message ${type} show`; // Add type and show class
+
+    statusTimeout = setTimeout(() => {
+      element.classList.remove("show");
+      // Optional: clear text after fade out
+      // setTimeout(() => { element.textContent = ''; }, 500);
+    }, duration);
+  };
+
+  // Calculate duration handling overnight shifts
+  const calculateDuration = (start, end) => {
+    if (!start || !end) return 0;
     try {
-      entries = JSON.parse(storedEntries);
+      // Use a fixed date to compare times only
+      const startDate = new Date(`1970-01-01T${start}:00Z`); // Assume UTC for consistency
+      const endDate = new Date(`1970-01-01T${end}:00Z`);
+
+      if (isNaN(startDate) || isNaN(endDate)) return 0;
+
+      let diffMs = endDate - startDate;
+
+      // If end time is earlier than or same as start time, assume it's the next day
+      if (diffMs <= 0) {
+        diffMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+      }
+      return diffMs / (1000 * 60 * 60); // Return duration in hours
+    } catch (e) {
+      console.error("Error calculating duration:", e);
+      return 0;
+    }
+  };
+
+  // ---=== Core Logic Functions ===---
+
+  // Load data from localStorage
+  const loadData = () => {
+    const storedEntries = localStorage.getItem(ENTRIES_STORAGE_KEY);
+    const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+
+    try {
+      entries = storedEntries ? JSON.parse(storedEntries) : [];
+      // Basic validation/migration if needed in the future
+      if (!Array.isArray(entries)) entries = [];
     } catch (e) {
       console.error("Error parsing entries:", e);
       entries = [];
+      showStatusMessage(
+        entryStatusSpan,
+        "Error loading entries.",
+        "error",
+        5000
+      );
     }
-  } else {
-    entries = [];
-  }
 
-  if (storedSettings) {
     try {
-      settings = JSON.parse(storedSettings);
+      settings = storedSettings
+        ? JSON.parse(storedSettings)
+        : { hourlyRate: 20.0 };
+      // Ensure hourlyRate is a number
+      settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
     } catch (e) {
-      console.error("Error parsing settings:", e); /* Keep defaults */
+      console.error("Error parsing settings:", e);
+      settings = { hourlyRate: 20.0 };
+      showStatusMessage(
+        settingsStatusSpan,
+        "Error loading settings.",
+        "error",
+        5000
+      );
     }
-  }
-  // Apply loaded settings
-  hourlyRateInput.value = settings.hourlyRate || 20.0;
-  //document.documentElement.setAttribute('data-theme', settings.theme || 'light');
-  //themeToggle.textContent = settings.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-};
 
-// Save data to localStorage
-const saveData = () => {
-  try {
-    localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  } catch (e) {
-    console.error("Error saving data to localStorage:", e);
-    alert("Could not save data. LocalStorage might be full or disabled.");
-  }
-};
+    // Apply loaded settings to the input
+    hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+  };
 
-// Calculate duration between two time strings in hours
-const calculateDuration = (start, end) => {
-  if (!start || !end) return 0;
-  const startDate = new Date(`1970-01-01T${start}:00`);
-  const endDate = new Date(`1970-01-01T${end}:00`);
-  if (isNaN(startDate) || isNaN(endDate)) return 0; // Invalid time format
+  // Save data to localStorage
+  const saveData = () => {
+    try {
+      localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.error("Error saving data to localStorage:", e);
+      // Provide feedback in a non-blocking way
+      showStatusMessage(
+        settingsStatusSpan,
+        "Error: Could not save data. Storage might be full.",
+        "error",
+        6000
+      );
+    }
+  };
 
-  if (endDate <= startDate) {
-    // Handle overnight
-    endDate.setDate(endDate.getDate() + 1);
-  }
-  const diffMs = endDate - startDate;
-  return diffMs / (1000 * 60 * 60);
-};
+  // Render the entries table
+  const renderEntries = () => {
+    entriesTbody.innerHTML = ""; // Clear existing rows
+    let filteredEntries = entries;
+    const rate = settings.hourlyRate;
 
-// Render the entries table based on current filter
-const renderEntries = () => {
-  entriesTbody.innerHTML = ""; // Clear table
-  let filteredEntries = entries;
+    // Apply date filter
+    if (currentFilter.startDate) {
+      filteredEntries = filteredEntries.filter(
+        (e) => e.date >= currentFilter.startDate
+      );
+    }
+    if (currentFilter.endDate) {
+      filteredEntries = filteredEntries.filter(
+        (e) => e.date <= currentFilter.endDate
+      );
+    }
 
-  // Apply date filter
-  if (currentFilter.startDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date >= currentFilter.startDate
-    );
-  }
-  if (currentFilter.endDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date <= currentFilter.endDate
-    );
-  }
+    // Sort by date and then start time descending (most recent first)
+    filteredEntries.sort((a, b) => {
+      const dateComparison = b.date.localeCompare(a.date);
+      if (dateComparison !== 0) return dateComparison;
+      // If dates are the same, sort by start time (descending might not be intuitive here, maybe ascending?)
+      // Let's stick to descending for most recent overall
+      return b.startTime.localeCompare(a.startTime);
+    });
 
-  // Sort by date descending (most recent first)
-  filteredEntries.sort(
-    (a, b) =>
-      new Date(b.date + "T" + b.startTime) -
-      new Date(a.date + "T" + a.startTime)
-  );
+    let totalHours = 0;
+    let totalPay = 0;
 
-  let totalHours = 0;
-  let totalPay = 0;
-  const rate = parseFloat(settings.hourlyRate) || 0;
+    if (filteredEntries.length === 0) {
+      noEntriesMessage.hidden = false; // Show the 'no entries' message
+    } else {
+      noEntriesMessage.hidden = true; // Hide the message
+      filteredEntries.forEach((entry) => {
+        const duration = calculateDuration(entry.startTime, entry.endTime);
+        const pay = duration * rate;
+        totalHours += duration;
+        totalPay += pay;
 
-  if (filteredEntries.length === 0) {
-    entriesTbody.innerHTML =
-      '<tr><td colspan="7" style="text-align:center; color: var(--secondary-text);">No entries found for the selected period.</td></tr>';
-  } else {
+        const tr = document.createElement("tr");
+        tr.dataset.id = entry.id; // Add data-id for easier selection
+        tr.innerHTML = `
+                    <td>${formatDate(entry.date)}</td>
+                    <td>${entry.startTime}</td>
+                    <td>${entry.endTime}</td>
+                    <td>${duration.toFixed(2)}</td>
+                    <td><span class="description" title="${
+                      entry.description || ""
+                    }">${entry.description || "-"}</span></td>
+                    <td>${pay.toFixed(2)}</td>
+                    <td class="actions">
+                        <button class="btn btn-warning btn-sm edit-btn" data-id="${
+                          entry.id
+                        }">Edit</button>
+                        <button class="btn btn-danger btn-sm delete-btn" data-id="${
+                          entry.id
+                        }">Del</button>
+                    </td>
+                `;
+        entriesTbody.appendChild(tr);
+      });
+    }
+
+    // Update filtered totals display
+    totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
+    totalPayFilteredSpan.textContent = totalPay.toFixed(2);
+
+    // Note: Event listeners for edit/delete are added once using event delegation
+  };
+
+  // Clear input form and reset buttons
+  const clearForm = () => {
+    editEntryIdInput.value = "";
+    entryDateInput.value = new Date().toISOString().split("T")[0]; // Today's date
+    startTimeInput.value = "";
+    endTimeInput.value = "";
+    descriptionInput.value = "";
+
+    addEntryBtn.hidden = false;
+    updateEntryBtn.hidden = true;
+    cancelEditBtn.hidden = true;
+
+    // Optional: remove any error styling from inputs if implemented
+  };
+
+  // Set up the form for editing an entry
+  const setupEditForm = (entry) => {
+    editEntryIdInput.value = entry.id;
+    entryDateInput.value = entry.date;
+    startTimeInput.value = entry.startTime;
+    endTimeInput.value = entry.endTime;
+    descriptionInput.value = entry.description || "";
+
+    addEntryBtn.hidden = true;
+    updateEntryBtn.hidden = false;
+    cancelEditBtn.hidden = false;
+
+    // Scroll form into view and focus first field
+    entryFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    entryDateInput.focus();
+  };
+
+  // ---=== Event Handlers ===---
+  const handleSaveSettings = () => {
+    const rate = parseFloat(hourlyRateInput.value);
+    if (isNaN(rate) || rate < 0) {
+      showStatusMessage(
+        settingsStatusSpan,
+        "Invalid rate. Please enter a positive number.",
+        "error"
+      );
+      hourlyRateInput.focus();
+      return;
+    }
+    settings.hourlyRate = rate;
+    saveData();
+    renderEntries(); // Re-render entries with new rate calculation
+    showStatusMessage(settingsStatusSpan, `Rate saved: $${rate.toFixed(2)}`);
+  };
+
+  const handleAddOrUpdateEntry = (isUpdate = false) => {
+    const id = isUpdate ? editEntryIdInput.value : generateId();
+    const date = entryDateInput.value;
+    const start = startTimeInput.value;
+    const end = endTimeInput.value;
+    const description = descriptionInput.value.trim();
+
+    // Basic validation
+    if (!date || !start || !end) {
+      showStatusMessage(
+        entryStatusSpan,
+        "Date, Start Time, and End Time are required.",
+        "error"
+      );
+      return;
+    }
+
+    // Validate time order (allow overnight confirmation)
+    const duration = calculateDuration(start, end);
+    if (start && end && start >= end) {
+      // Check if end time is not later than start time
+      if (
+        !confirm(
+          "End time is earlier than or the same as start time. Is this an overnight shift?"
+        )
+      ) {
+        showStatusMessage(entryStatusSpan, "Entry cancelled.", "error");
+        return;
+      }
+    }
+    if (duration <= 0 && start < end) {
+      // Handle invalid time inputs leading to zero/negative duration
+      showStatusMessage(
+        entryStatusSpan,
+        "Invalid time range selected.",
+        "error"
+      );
+      return;
+    }
+
+    const entryData = {
+      id,
+      date,
+      startTime: start,
+      endTime: end,
+      description,
+      // Rate at time of entry isn't stored here, using global setting for calculations
+    };
+
+    if (isUpdate) {
+      const index = entries.findIndex((e) => e.id === id);
+      if (index !== -1) {
+        entries[index] = entryData;
+        showStatusMessage(
+          entryStatusSpan,
+          "Entry updated successfully.",
+          "success"
+        );
+      } else {
+        showStatusMessage(
+          entryStatusSpan,
+          "Error: Entry not found for update.",
+          "error"
+        );
+        clearForm(); // Reset form if update failed weirdly
+        return; // Exit early
+      }
+    } else {
+      entries.push(entryData);
+      showStatusMessage(
+        entryStatusSpan,
+        "Entry added successfully.",
+        "success"
+      );
+    }
+
+    saveData();
+    renderEntries();
+    clearForm();
+  };
+
+  const handleTableActions = (event) => {
+    const target = event.target;
+    const entryId = target.dataset.id;
+
+    if (!entryId) return; // Click wasn't on a button with data-id
+
+    if (target.classList.contains("edit-btn")) {
+      const entryToEdit = entries.find((e) => e.id === entryId);
+      if (entryToEdit) {
+        setupEditForm(entryToEdit);
+      }
+    } else if (target.classList.contains("delete-btn")) {
+      if (confirm("Are you sure you want to delete this entry?")) {
+        entries = entries.filter((e) => e.id !== entryId);
+        saveData();
+        renderEntries();
+        showStatusMessage(entryStatusSpan, "Entry deleted.", "success");
+        // If the deleted entry was being edited, clear the form
+        if (editEntryIdInput.value === entryId) {
+          clearForm();
+        }
+      }
+    }
+  };
+
+  const handleFilter = () => {
+    // Basic validation: End date should not be before start date
+    if (
+      filterStartDateInput.value &&
+      filterEndDateInput.value &&
+      filterEndDateInput.value < filterStartDateInput.value
+    ) {
+      showStatusMessage(
+        exportStatusSpan,
+        "Filter 'To' date cannot be before 'From' date.",
+        "error"
+      );
+      return;
+    }
+
+    currentFilter.startDate = filterStartDateInput.value || null;
+    currentFilter.endDate = filterEndDateInput.value || null;
+    renderEntries();
+    showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500); // Short message
+  };
+
+  const handleResetFilter = () => {
+    filterStartDateInput.value = "";
+    filterEndDateInput.value = "";
+    currentFilter.startDate = null;
+    currentFilter.endDate = null;
+    renderEntries();
+    showStatusMessage(exportStatusSpan, "Filter reset.", "success", 1500);
+  };
+
+  const handleExportCsv = () => {
+    let filteredEntries = entries;
+    if (currentFilter.startDate) {
+      filteredEntries = filteredEntries.filter(
+        (e) => e.date >= currentFilter.startDate
+      );
+    }
+    if (currentFilter.endDate) {
+      filteredEntries = filteredEntries.filter(
+        (e) => e.date <= currentFilter.endDate
+      );
+    }
+
+    if (filteredEntries.length === 0) {
+      showStatusMessage(
+        exportStatusSpan,
+        "No entries selected to export.",
+        "error"
+      );
+      return;
+    }
+
+    // Sort for export consistency (same as render)
+    filteredEntries.sort((a, b) => {
+      const dateComparison = b.date.localeCompare(a.date);
+      if (dateComparison !== 0) return dateComparison;
+      return b.startTime.localeCompare(a.startTime);
+    });
+
+    const rate = settings.hourlyRate;
+    let csvContent =
+      "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n"; // Header
+
     filteredEntries.forEach((entry) => {
       const duration = calculateDuration(entry.startTime, entry.endTime);
       const pay = duration * rate;
-      totalHours += duration;
-      totalPay += pay;
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-                <td>${formatDate(entry.date)}</td>
-                <td>${entry.startTime}</td>
-                <td>${entry.endTime}</td>
-                <td>${duration.toFixed(2)}</td>
-                <td><span class="description" title="${
-                  entry.description || ""
-                }">${entry.description || "-"}</span></td>
-                <td>${pay.toFixed(2)}</td>
-                <td class="actions">
-                    <button class="warning edit-btn" data-id="${
-                      entry.id
-                    }">Edit</button>
-                    <button class="danger delete-btn" data-id="${
-                      entry.id
-                    }">Del</button>
-                </td>
-            `;
-      entriesTbody.appendChild(tr);
+      // Escape potential commas and quotes in description
+      const escapedDesc = entry.description
+        ? `"${entry.description.replace(/"/g, '""')}"`
+        : "";
+      csvContent += `${entry.date},${entry.startTime},${
+        entry.endTime
+      },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
     });
-  }
 
-  // Update filtered totals display
-  totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
-  totalPayFilteredSpan.textContent = totalPay.toFixed(2);
+    // Create and trigger download
+    try {
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
 
-  // Add event listeners for edit/delete buttons
-  attachActionListeners();
-};
+      // Generate filename
+      let filename = "work_hours_export.csv";
+      const today = new Date().toISOString().split("T")[0];
+      const start = currentFilter.startDate || "all";
+      const end = currentFilter.endDate || today;
+      if (start !== "all" || end !== today) {
+        filename = `work_hours_${start}_to_${end}.csv`;
+      }
 
-// Attach listeners to dynamically created buttons
-const attachActionListeners = () => {
-  document.querySelectorAll(".edit-btn").forEach((button) => {
-    button.addEventListener("click", handleEdit);
-  });
-  document.querySelectorAll(".delete-btn").forEach((button) => {
-    button.addEventListener("click", handleDelete);
-  });
-};
-
-// Clear input form
-const clearForm = () => {
-  editEntryIdInput.value = ""; // Clear edit ID
-  entryDateInput.value = new Date().toISOString().split("T")[0]; // Reset date
-  startTimeInput.value = "";
-  endTimeInput.value = "";
-  descriptionInput.value = "";
-  addEntryBtn.style.display = "inline-block";
-  updateEntryBtn.style.display = "none";
-  cancelEditBtn.style.display = "none";
-  startTimeInput.disabled = false;
-  endTimeInput.disabled = false;
-  entryDateInput.disabled = false;
-};
-
-// ---=== Event Handlers ===---
-const handleSaveSettings = () => {
-  const rate = parseFloat(hourlyRateInput.value);
-  if (isNaN(rate) || rate < 0) {
-    showStatusMessage("Please enter a valid hourly rate.", "error");
-    return;
-  }
-  settings.hourlyRate = rate.toFixed(2); // Store as string with 2 decimals
-  saveData();
-  renderEntries(); // Re-render in case pay changed
-  showStatusMessage("Settings saved!");
-};
-
-// Show a status message that fades after a few seconds
-const showStatusMessage = (message, type = "success") => {
-  if (!settingsStatusSpan) return;
-
-  // Clear any existing timeout
-  if (settingsStatusTimeout) {
-    clearTimeout(settingsStatusTimeout);
-  }
-
-  // Set the message and show it
-  settingsStatusSpan.textContent = message;
-  settingsStatusSpan.className = `status-message ${type} show`;
-
-  // Hide after 3 seconds
-  settingsStatusTimeout = setTimeout(() => {
-    settingsStatusSpan.classList.remove("show");
-  }, 3000);
-};
-
-const handleAddEntry = () => {
-  const date = entryDateInput.value;
-  const start = startTimeInput.value;
-  const end = endTimeInput.value;
-  const description = descriptionInput.value.trim();
-  const rate = parseFloat(settings.hourlyRate) || 0;
-
-  if (!date || !start || !end) {
-    alert("Please fill in Date, Start Time, and End Time.");
-    return;
-  }
-  if (end < start) {
-    if (
-      !confirm("End time is before start time. Is this an overnight shift?")
-    ) {
-      return; // Don't add if user cancels
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url); // Clean up
+      showStatusMessage(exportStatusSpan, "CSV export generated.", "success");
+    } catch (e) {
+      console.error("CSV Export failed:", e);
+      showStatusMessage(
+        exportStatusSpan,
+        "CSV export failed. See console for details.",
+        "error"
+      );
+      // Fallback maybe? Could display in a textarea if needed.
     }
-  }
-
-  const newEntry = {
-    id: generateId(),
-    date,
-    startTime: start,
-    endTime: end,
-    description,
-    hourlyRate: rate, // Store rate at time of entry (optional)
-  };
-  entries.push(newEntry);
-  saveData();
-  renderEntries();
-  clearForm();
-};
-
-// Handle clicking the Edit button on a row
-const handleEdit = (event) => {
-  const id = event.target.getAttribute("data-id");
-  const entryToEdit = entries.find((e) => e.id === id);
-  if (!entryToEdit) return;
-
-  // Populate the form
-  editEntryIdInput.value = entryToEdit.id;
-  entryDateInput.value = entryToEdit.date;
-  startTimeInput.value = entryToEdit.startTime;
-  endTimeInput.value = entryToEdit.endTime;
-  descriptionInput.value = entryToEdit.description || "";
-
-  // Change button visibility
-  addEntryBtn.style.display = "none";
-  updateEntryBtn.style.display = "inline-block";
-  cancelEditBtn.style.display = "inline-block";
-
-  // Scroll to form and maybe highlight it
-  startTimeInput.focus();
-  document
-    .getElementById("startTime")
-    .closest(".section")
-    .scrollIntoView({ behavior: "smooth" });
-
-  // // Optional: Show a modal instead of reusing the form
-  // // modalContent.innerHTML = '... form fields populated ...';
-  // // editModal.style.display = 'block';
-};
-
-// Handle clicking the Update Entry button (after populating form via Edit)
-const handleUpdateEntry = () => {
-  const id = editEntryIdInput.value;
-  const entryIndex = entries.findIndex((e) => e.id === id);
-  if (entryIndex === -1) return; // Should not happen
-
-  const date = entryDateInput.value;
-  const start = startTimeInput.value;
-  const end = endTimeInput.value;
-  const description = descriptionInput.value.trim();
-
-  if (!date || !start || !end) {
-    alert("Please fill in Date, Start Time, and End Time.");
-    return;
-  }
-  if (end < start) {
-    if (
-      !confirm("End time is before start time. Is this an overnight shift?")
-    ) {
-      return; // Don't update if user cancels
-    }
-  }
-
-  // Update the entry in the array
-  entries[entryIndex] = {
-    ...entries[entryIndex], // Keep original ID and rate
-    date,
-    startTime: start,
-    endTime: end,
-    description,
   };
 
-  saveData();
-  renderEntries();
-  clearForm(); // Resets buttons and clears form
-};
+  // ---=== Initialization ===---
+  const initializeApp = () => {
+    loadData();
+    clearForm(); // Set default date and button states
+    renderEntries(); // Initial render
 
-// Handle clicking the Delete button on a row
-const handleDelete = (event) => {
-  const id = event.target.getAttribute("data-id");
-  if (confirm(`Are you sure you want to delete this entry?`)) {
-    entries = entries.filter((e) => e.id !== id);
-    saveData();
-    renderEntries();
-  }
-};
+    // Attach Event Listeners
+    saveSettingsBtn.addEventListener("click", handleSaveSettings);
+    addEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(false)); // Explicitly adding
+    updateEntryBtn.addEventListener("click", () =>
+      handleAddOrUpdateEntry(true)
+    ); // Explicitly updating
+    cancelEditBtn.addEventListener("click", clearForm);
 
-// Handle filter application
-const handleFilter = () => {
-  currentFilter.startDate = filterStartDateInput.value || null;
-  currentFilter.endDate = filterEndDateInput.value || null;
-  renderEntries(); // Re-render with new filter
-  csvOutput.value = ""; // Clear CSV output on new filter
-};
+    // Use event delegation for edit/delete buttons in the table
+    entriesTbody.addEventListener("click", handleTableActions);
 
-// Handle filter reset
-const handleResetFilter = () => {
-  filterStartDateInput.value = "";
-  filterEndDateInput.value = "";
-  currentFilter.startDate = null;
-  currentFilter.endDate = null;
-  renderEntries();
-  csvOutput.value = "";
-};
+    filterBtn.addEventListener("click", handleFilter);
+    resetFilterBtn.addEventListener("click", handleResetFilter);
+    exportCsvBtn.addEventListener("click", handleExportCsv);
 
-// Handle exporting filtered data to CSV format
-const handleExportCsv = () => {
-  let filteredEntries = entries;
-  if (currentFilter.startDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date >= currentFilter.startDate
-    );
-  }
-  if (currentFilter.endDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date <= currentFilter.endDate
-    );
-  }
+    // Optional: Re-calculate totals if rate changes without saving
+    // hourlyRateInput.addEventListener('input', () => { /* maybe update totals dynamically? */ });
+  };
 
-  if (filteredEntries.length === 0) {
-    csvOutput.value = "No entries selected to export.";
-    return;
-  }
-
-  const rate = parseFloat(settings.hourlyRate) || 0;
-  // Define CSV Header
-  let csvContent =
-    "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n";
-
-  // Add rows
-  filteredEntries.forEach((entry) => {
-    const duration = calculateDuration(entry.startTime, entry.endTime);
-    const pay = duration * rate;
-    // Escape commas and quotes in description
-    const escapedDesc = entry.description
-      ? `"${entry.description.replace(/"/g, '""')}"`
-      : "";
-    csvContent += `${entry.date},${entry.startTime},${
-      entry.endTime
-    },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
-  });
-
-  csvOutput.value = csvContent;
-  csvOutput.select(); // Select text for easy copying
-  alert(
-    "CSV data generated below. Select all (Ctrl+A or Cmd+A) and copy (Ctrl+C or Cmd+C) to paste into a spreadsheet or text file."
-  );
-};
-
-/* // Handle theme toggle
-const handleThemeToggle = () => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    settings.theme = newTheme;
-    themeToggle.textContent = newTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-    saveData();
-}; */
-
-/*// --- Timer Functionality ---
-const startTimer = () => {
-  if (timerInterval) return; // Already running
-
-  // Disable form fields while timer runs maybe? Or just start/end time
-  startTimeInput.disabled = true;
-  endTimeInput.disabled = true;
-  entryDateInput.disabled = true;
-  addEntryBtn.disabled = true;
-
-  const now = new Date();
-  timerStartTimeInput.value = now.toISOString(); // Store precise start time
-  startTimeInput.value = now.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }); // Set start time in form
-  entryDateInput.value = now.toISOString().split("T")[0]; // Set date in form
-
-  timerSeconds = 0;
-  timerDisplay.textContent = formatTime(timerSeconds);
-
-  timerInterval = setInterval(() => {
-    timerSeconds++;
-    timerDisplay.textContent = formatTime(timerSeconds);
-  }, 1000);
-
-  startTimerBtn.disabled = true;
-  stopTimerBtn.disabled = false;
-};
-
-const stopTimer = () => {
-  if (!timerInterval) return; // Not running
-
-  clearInterval(timerInterval);
-  timerInterval = null;
-
-  const now = new Date();
-  endTimeInput.value = now.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }); // Set end time
-
-  startTimerBtn.disabled = false;
-  stopTimerBtn.disabled = true;
-  addEntryBtn.disabled = false; // Re-enable add button
-  startTimeInput.disabled = false; // Re-enable fields
-  endTimeInput.disabled = false;
-  entryDateInput.disabled = false;
-
-  // Automatically add the entry? Or just pre-fill? Let's pre-fill.
-  // User can add description and click "Add Manual Entry"
-  alert(
-    `Timer stopped at ${formatTime(
-      timerSeconds
-    )}. Please add description if needed and click 'Add Manual Entry'.`
-  );
-  // Optional: Automatically add entry here
-  // handleAddEntry();
-};*/
-
-// ---=== Initialization ===---
-const initializeApp = () => {
-  loadData(); // Load saved data first
-  clearForm(); // Set default date and button states
-  renderEntries(); // Render initial view
-
-  // Make sure the status message is initially hidden
-  if (settingsStatusSpan) {
-    settingsStatusSpan.textContent = "";
-    settingsStatusSpan.classList.remove("show");
-  }
-
-  // Attach persistent event listeners
-  saveSettingsBtn.addEventListener("click", handleSaveSettings);
-  addEntryBtn.addEventListener("click", handleAddEntry);
-  updateEntryBtn.addEventListener("click", handleUpdateEntry);
-  cancelEditBtn.addEventListener("click", clearForm);
-  filterBtn.addEventListener("click", handleFilter);
-  resetFilterBtn.addEventListener("click", handleResetFilter);
-  exportCsvBtn.addEventListener("click", handleExportCsv);
-  //themeToggle.addEventListener('click', handleThemeToggle);
-  //startTimerBtn.addEventListener("click", startTimer);
-  //stopTimerBtn.addEventListener("click", stopTimer);
-
-  // Basic modal close functionality if used
-  if (modalCloseBtn) {
-    modalCloseBtn.addEventListener("click", () => {
-      if (editModal) editModal.style.display = "none";
-    });
-  }
-
-  window.addEventListener("click", (event) => {
-    if (editModal && event.target == editModal) {
-      editModal.style.display = "none";
-    }
-  });
-};
-
-// Start the application
-document.addEventListener("DOMContentLoaded", initializeApp);
+  // Start the application
+  initializeApp();
+});
