@@ -8,7 +8,6 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    
     <title>Grind Time</title>
     <link rel="apple-touch-icon" href="assets/icons/icon.png" />
     <link rel="icon" type="image/png" href="assets/icons/favicon.png" />
@@ -16,122 +15,130 @@
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <h1>Work Hours</h1>
-      </div>
+      <header class="header">
+        <h1>Daily Grind</h1>
+      </header>
 
-      <div class="section">
-        <div class="form-group">
-          <label for="hourlyRate">Hourly Rate ($$$):</label>
+      <section id="entryFormCard" class="card">
+        <h2>Log / Edit Time</h2>
+        <input type="hidden" id="editEntryId" />
+
+        <div class="rate-setting-group form-group">
+          <label for="hourlyRate">Rate ($):</label>
           <input
             type="number"
             id="hourlyRate"
             step="0.01"
-            placeholder="Your rate here"
+            min="0"
+            placeholder="Rate"
           />
+          <button id="saveSettingsBtn" class="btn btn-success btn-sm">
+            Save
+          </button>
+          <span
+            id="settingsStatus"
+            class="status-message"
+            aria-live="polite"
+          ></span>
         </div>
-        <div style="text-align: left">
-          <button id="saveSettingsBtn" class="success">Save</button>
-          <span id="settingsStatus" class="status-message"></span>
-        </div>
-      </div>
-      <div class="section">
-        <h2>Log Time</h2>
-        <input type="hidden" id="editEntryId" />
-        <!--<div class="timer-controls">
-          <button id="startTimerBtn" class="success">Starts Timer</button>
-          <button id="stopTimerBtn" class="danger" disabled>Stop Timer</button>
-        </div>
-        <div id="timerDisplay" class="timer-display">00:00:00</div>
-        <input type="hidden" id="timerStartTime" />
-        <hr style="margin: 20px 0; border-color: var(--border-color)" />-->
-
         <div class="form-group">
           <label for="entryDate">Date:</label>
-          <input type="date" id="entryDate" />
+          <input type="date" id="entryDate" required />
         </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap">
-          <div class="form-group" style="flex: 1">
+        <div class="time-inputs">
+          <div class="form-group">
             <label for="startTime">Start Time:</label>
-            <input type="time" id="startTime" />
+            <input type="time" id="startTime" required />
           </div>
-          <div class="form-group" style="flex: 1">
+          <div class="form-group">
             <label for="endTime">End Time:</label>
-            <input type="time" id="endTime" />
+            <input type="time" id="endTime" required />
           </div>
         </div>
         <div class="form-group">
-          <label for="description">Job Description:</label>
+          <label for="description">Job Description (Optional):</label>
           <input
             type="text"
             id="description"
-            placeholder="Task performed, client, etc."
+            placeholder="Task, client, project..."
           />
         </div>
-        <button id="addEntryBtn">Add Entry</button>
-        <button id="updateEntryBtn" style="display: none" class="warning">
-          Update Entry
-        </button>
-        <button id="cancelEditBtn" style="display: none">Cancel Edit</button>
-      </div>
+        <div class="form-actions">
+          <button id="addEntryBtn" class="btn btn-primary">Add Entry</button>
+          <button id="updateEntryBtn" class="btn btn-warning" hidden>
+            Update Entry
+          </button>
+          <button id="cancelEditBtn" class="btn btn-secondary" hidden>
+            Cancel Edit
+          </button>
+          <span
+            id="entryStatus"
+            class="status-message"
+            aria-live="polite"
+          ></span>
+        </div>
+      </section>
 
-      <div class="section">
-        <h2>Filter Past Entries</h2>
-        <div class="filter-group">
+      <section class="card">
+        <h2>Past Entries</h2>
+        <div class="filter-controls">
           <div class="form-group">
-            <label for="filterStartDate">From:</label>
+            <label for="filterStartDate">Filter From:</label>
             <input type="date" id="filterStartDate" />
           </div>
           <div class="form-group">
-            <label for="filterEndDate">To:</label>
+            <label for="filterEndDate">Filter To:</label>
             <input type="date" id="filterEndDate" />
           </div>
-          <button id="filterBtn">Apply Filter</button>
-          <button id="resetFilterBtn">Reset Filter</button>
+          <div class="form-actions filter-buttons">
+            <button id="filterBtn" class="btn btn-primary">Apply Filter</button>
+            <button id="resetFilterBtn" class="btn btn-secondary">
+              Reset Filter
+            </button>
+          </div>
         </div>
+
         <div class="totals-display">
           <h3>Filtered Totals</h3>
-          <p>Total Hours: <span id="totalHoursFiltered">0.00</span></p>
-          <p>Total Pay: $<span id="totalPayFiltered">0.00</span></p>
+          <p>Total Hours: <strong id="totalHoursFiltered">0.00</strong></p>
+          <p>Total Pay: $<strong id="totalPayFiltered">0.00</strong></p>
         </div>
-        <table id="entriesTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Start</th>
-              <th>End</th>
-              <th>Duration (hrs)</th>
-              <th>Desc</th>
-              <th>Pay ($)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="entriesTbody"></tbody>
-        </table>
-      </div>
 
-      <div class="section">
+        <div class="table-wrapper">
+          <table id="entriesTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Hrs</th>
+                <th>Desc.</th>
+                <th>Pay ($)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="entriesTbody"></tbody>
+          </table>
+          <p id="noEntriesMessage" class="text-center muted" hidden>
+            No entries found for the selected period.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
         <h2>Export Data</h2>
-        <button id="exportCsvBtn">Generate CSV for Filtered Entries</button>
-        <textarea
-          id="csvOutput"
-          readonly
-          placeholder="CSV data will appear here. Copy and paste into a text file or spreadsheet."
-        ></textarea>
-      </div>
+        <div class="form-actions">
+          <button id="exportCsvBtn" class="btn btn-primary">
+            Export Filtered to CSV
+          </button>
+          <span
+            id="exportStatus"
+            class="status-message"
+            aria-live="polite"
+          ></span>
+        </div>
+      </section>
     </div>
-
-    <div id="editModal" class="modal">
-      <div class="modal-content">
-        <span class="modal-close" id="modalCloseBtn">&times;</span>
-        <h2>Edit Entry</h2>
-        <p>
-          Please use the "Manual Entry / Edit" form above to modify the details
-          and click "Update Entry".
-        </p>
-      </div>
-    </div>
-
     <script src="script.js"></script>
   </body>
 </html>
