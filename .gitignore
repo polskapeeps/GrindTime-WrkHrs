@@ -1,3 +1,5 @@
 .vscode/
 .references/
 .docs/
+
+node_modules/
