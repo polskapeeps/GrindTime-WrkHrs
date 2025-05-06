@@ -1,24 +1,44 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+// Import Realtime Database functions
+import {
+  getDatabase,
+  ref,
+  set,
+  onValue,
+  push,
+  remove,
+  update, // Added for specific updates if needed
+  // get, // Use 'get' for one-time reads if not using onValue
+} from "firebase/database";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Your web app's Firebase configuration (from your original file)
 const firebaseConfig = {
-  apiKey: "AIzaSyDqusLzhEc3GvFElGRdi6mjxtxhLuInYrA",
+  apiKey: "AIzaSyDqusLzhEc3GvFElGRdi6mjxtxhLuInYrA", // IMPORTANT: Keep your actual API key secure
   authDomain: "grind-time-747f4.firebaseapp.com",
   projectId: "grind-time-747f4",
   storageBucket: "grind-time-747f4.firebasestorage.app",
   messagingSenderId: "406101223329",
   appId: "1:406101223329:web:bca312115c3b61181dcde0",
-  measurementId: "G-1ZE97D6KCC"
+  measurementId: "G-1ZE97D6KCC",
+  // Add your databaseURL here if it's not automatically inferred (usually it is for v9+)
+  // databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+const database = getDatabase(app); // Initialize Realtime Database
+
+// ---=== Firebase Path References ===---
+// TODO: If implementing user authentication, replace these with user-specific paths
+// e.g., const userId = firebase.auth().currentUser.uid;
+// const SETTINGS_PATH = `users/${userId}/settings`;
+// const ENTRIES_PATH = `users/${userId}/entries`;
+const SETTINGS_PATH = "settings";
+const ENTRIES_PATH = "entries";
+
 
 document.addEventListener("DOMContentLoaded", () => {
   // ---=== DOM Elements ===---
@@ -34,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const addEntryBtn = document.getElementById("addEntryBtn");
   const updateEntryBtn = document.getElementById("updateEntryBtn");
   const cancelEditBtn = document.getElementById("cancelEditBtn");
-  const editEntryIdInput = document.getElementById("editEntryId"); // Hidden input
+  const editEntryIdInput = document.getElementById("editEntryId");
   const entryStatusSpan = document.getElementById("entryStatus");
 
   const entriesTbody = document.getElementById("entriesTbody");
@@ -51,33 +71,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportStatusSpan = document.getElementById("exportStatus");
 
   // ---=== State Variables ===---
-  let entries = [];
-  let settings = { hourlyRate: 20.0 }; // Default rate
+  let entries = []; // This will now be populated from Firebase
+  let settings = { hourlyRate: 20.0 }; // Default, will be overwritten by Firebase
   let currentFilter = { startDate: null, endDate: null };
-  let statusTimeout = null; // For managing status message display
+  let statusTimeout = null;
 
-  // ---=== localStorage Keys ===---
-  const ENTRIES_STORAGE_KEY = "grindTimeEntries_v1"; // Renamed key slightly
-  const SETTINGS_STORAGE_KEY = "grindTimeSettings_v1";
+  // ---=== Helper Functions (mostly unchanged) ===---
+  // generateId is no longer needed as Firebase provides unique keys for pushed items.
 
-  // ---=== Helper Functions ===---
-  const generateId = () => "_" + Math.random().toString(36).substr(2, 9);
-
-  // Formats YYYY-MM-DD to a more readable format like "Wed, May 3"
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    // Use UTC to avoid timezone issues with date-only strings
     const [year, month, day] = dateString.split("-").map(Number);
     const dateObj = new Date(Date.UTC(year, month - 1, day));
     return dateObj.toLocaleDateString(undefined, {
       weekday: "short",
       month: "short",
       day: "numeric",
-      timeZone: "UTC", // Specify UTC timezone
+      timeZone: "UTC",
     });
   };
 
-  // Show status message and hide after a delay
   const showStatusMessage = (
     element,
     message,
@@ -85,124 +98,105 @@ document.addEventListener("DOMContentLoaded", () => {
     duration = 3000
   ) => {
     if (!element) return;
-    clearTimeout(statusTimeout); // Clear previous timeout if any
+    clearTimeout(statusTimeout);
     element.textContent = message;
-    element.className = `status-message ${type} show`; // Add type and show class
-
+    element.className = `status-message ${type} show`;
     statusTimeout = setTimeout(() => {
       element.classList.remove("show");
-      // Optional: clear text after fade out
-      // setTimeout(() => { element.textContent = ''; }, 500);
     }, duration);
   };
 
-  // Calculate duration handling overnight shifts
   const calculateDuration = (start, end) => {
     if (!start || !end) return 0;
     try {
-      // Use a fixed date to compare times only
-      const startDate = new Date(`1970-01-01T${start}:00Z`); // Assume UTC for consistency
+      const startDate = new Date(`1970-01-01T${start}:00Z`);
       const endDate = new Date(`1970-01-01T${end}:00Z`);
-
       if (isNaN(startDate) || isNaN(endDate)) return 0;
-
       let diffMs = endDate - startDate;
-
-      // If end time is earlier than or same as start time, assume it's the next day
       if (diffMs <= 0) {
-        diffMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+        diffMs += 24 * 60 * 60 * 1000;
       }
-      return diffMs / (1000 * 60 * 60); // Return duration in hours
+      return diffMs / (1000 * 60 * 60);
     } catch (e) {
       console.error("Error calculating duration:", e);
       return 0;
     }
   };
 
-  // ---=== Core Logic Functions ===---
+  // ---=== Firebase Data Functions ===---
 
-  // Load data from localStorage
-  const loadData = () => {
-    const storedEntries = localStorage.getItem(ENTRIES_STORAGE_KEY);
-    const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-
-    try {
-      entries = storedEntries ? JSON.parse(storedEntries) : [];
-      // Basic validation/migration if needed in the future
-      if (!Array.isArray(entries)) entries = [];
-    } catch (e) {
-      console.error("Error parsing entries:", e);
-      entries = [];
-      showStatusMessage(
-        entryStatusSpan,
-        "Error loading entries.",
-        "error",
-        5000
-      );
-    }
-
-    try {
-      settings = storedSettings
-        ? JSON.parse(storedSettings)
-        : { hourlyRate: 20.0 };
-      // Ensure hourlyRate is a number
-      settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
-    } catch (e) {
-      console.error("Error parsing settings:", e);
-      settings = { hourlyRate: 20.0 };
-      showStatusMessage(
-        settingsStatusSpan,
-        "Error loading settings.",
-        "error",
-        5000
-      );
-    }
-
-    // Apply loaded settings to the input
-    hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+  // Load settings from Firebase
+  const loadSettings = () => {
+    const settingsRef = ref(database, SETTINGS_PATH);
+    onValue(settingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        settings = data;
+        settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
+      } else {
+        // Initialize settings in Firebase if they don't exist
+        saveSettingsToFirebase(settings)
+            .then(() => console.log("Default settings saved to Firebase."))
+            .catch(err => console.error("Error saving default settings:", err));
+      }
+      hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+      renderEntries(); // Re-render if rate affects display immediately
+    }, (error) => {
+      console.error("Error loading settings from Firebase:", error);
+      showStatusMessage(settingsStatusSpan, "Error loading settings.", "error", 5000);
+    });
   };
 
-  // Save data to localStorage
-  const saveData = () => {
+  // Save settings to Firebase
+  const saveSettingsToFirebase = async (newSettings) => {
+    const settingsRef = ref(database, SETTINGS_PATH);
     try {
-      localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-    } catch (e) {
-      console.error("Error saving data to localStorage:", e);
-      // Provide feedback in a non-blocking way
-      showStatusMessage(
-        settingsStatusSpan,
-        "Error: Could not save data. Storage might be full.",
-        "error",
-        6000
-      );
+      await set(settingsRef, newSettings);
+      // settings global variable will be updated by the onValue listener
+    } catch (error) {
+      console.error("Error saving settings to Firebase:", error);
+      throw error; // Re-throw to be caught by caller
     }
   };
 
-  // Render the entries table
+  // Load entries from Firebase
+  const loadEntries = () => {
+    const entriesDbRef = ref(database, ENTRIES_PATH);
+    onValue(entriesDbRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Firebase returns an object with unique keys. Convert to an array.
+        entries = Object.keys(data).map(key => ({
+          id: key, // Store Firebase key as 'id'
+          ...data[key]
+        }));
+      } else {
+        entries = [];
+      }
+      renderEntries();
+    }, (error) => {
+      console.error("Error loading entries from Firebase:", error);
+      showStatusMessage(entryStatusSpan, "Error loading entries.", "error", 5000);
+    });
+  };
+
+  // ---=== Core Logic Functions (Modified for Firebase) ===---
+
   const renderEntries = () => {
-    entriesTbody.innerHTML = ""; // Clear existing rows
-    let filteredEntries = entries;
+    entriesTbody.innerHTML = "";
+    let filteredEntries = entries; // Assumes 'entries' array is up-to-date from Firebase
     const rate = settings.hourlyRate;
 
-    // Apply date filter
     if (currentFilter.startDate) {
-      filteredEntries = filteredEntries.filter(
-        (e) => e.date >= currentFilter.startDate
-      );
+      filteredEntries = filteredEntries.filter(e => e.date >= currentFilter.startDate);
     }
     if (currentFilter.endDate) {
-      filteredEntries = filteredEntries.filter(
-        (e) => e.date <= currentFilter.endDate
-      );
+      filteredEntries = filteredEntries.filter(e => e.date <= currentFilter.endDate);
     }
 
-    // Sort by date and then start time descending (most recent first)
     filteredEntries.sort((a, b) => {
       const dateComparison = b.date.localeCompare(a.date);
       if (dateComparison !== 0) return dateComparison;
-      // If dates are the same, sort by start time (descending might not be intuitive here, maybe ascending?)
-      // Let's stick to descending for most recent overall
       return b.startTime.localeCompare(a.startTime);
     });
 
@@ -210,9 +204,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let totalPay = 0;
 
     if (filteredEntries.length === 0) {
-      noEntriesMessage.hidden = false; // Show the 'no entries' message
+      noEntriesMessage.hidden = false;
     } else {
-      noEntriesMessage.hidden = true; // Hide the message
+      noEntriesMessage.hidden = true;
       filteredEntries.forEach((entry) => {
         const duration = calculateDuration(entry.startTime, entry.endTime);
         const pay = duration * rate;
@@ -220,211 +214,154 @@ document.addEventListener("DOMContentLoaded", () => {
         totalPay += pay;
 
         const tr = document.createElement("tr");
-        tr.dataset.id = entry.id; // Add data-id for easier selection
+        tr.dataset.id = entry.id;
         tr.innerHTML = `
-                    <td>${formatDate(entry.date)}</td>
-                    <td>${entry.startTime}</td>
-                    <td>${entry.endTime}</td>
-                    <td>${duration.toFixed(2)}</td>
-                    <td><span class="description" title="${
-                      entry.description || ""
-                    }">${entry.description || "-"}</span></td>
-                    <td>${pay.toFixed(2)}</td>
-                    <td class="actions">
-                        <button class="btn btn-warning btn-sm edit-btn" data-id="${
-                          entry.id
-                        }">Edit</button>
-                        <button class="btn btn-danger btn-sm delete-btn" data-id="${
-                          entry.id
-                        }">Del</button>
-                    </td>
-                `;
+          <td>${formatDate(entry.date)}</td>
+          <td>${entry.startTime}</td>
+          <td>${entry.endTime}</td>
+          <td>${duration.toFixed(2)}</td>
+          <td><span class="description" title="${entry.description || ""}">${entry.description || "-"}</span></td>
+          <td>${pay.toFixed(2)}</td>
+          <td class="actions">
+            <button class="btn btn-warning btn-sm edit-btn" data-id="${entry.id}">Edit</button>
+            <button class="btn btn-danger btn-sm delete-btn" data-id="${entry.id}">Del</button>
+          </td>
+        `;
         entriesTbody.appendChild(tr);
       });
     }
-
-    // Update filtered totals display
     totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
     totalPayFilteredSpan.textContent = totalPay.toFixed(2);
-
-    // Note: Event listeners for edit/delete are added once using event delegation
   };
 
-  // Clear input form and reset buttons
   const clearForm = () => {
     editEntryIdInput.value = "";
-    entryDateInput.value = new Date().toISOString().split("T")[0]; // Today's date
+    entryDateInput.value = new Date().toISOString().split("T")[0];
     startTimeInput.value = "";
     endTimeInput.value = "";
     descriptionInput.value = "";
-
     addEntryBtn.hidden = false;
     updateEntryBtn.hidden = true;
     cancelEditBtn.hidden = true;
-
-    // Optional: remove any error styling from inputs if implemented
   };
 
-  // Set up the form for editing an entry
   const setupEditForm = (entry) => {
-    editEntryIdInput.value = entry.id;
+    editEntryIdInput.value = entry.id; // Firebase key
     entryDateInput.value = entry.date;
     startTimeInput.value = entry.startTime;
     endTimeInput.value = entry.endTime;
     descriptionInput.value = entry.description || "";
-
     addEntryBtn.hidden = true;
     updateEntryBtn.hidden = false;
     cancelEditBtn.hidden = false;
-
-    // Scroll form into view and focus first field
     entryFormCard.scrollIntoView({ behavior: "smooth", block: "start" });
     entryDateInput.focus();
   };
 
-  // ---=== Event Handlers ===---
-  const handleSaveSettings = () => {
-    const rate = parseFloat(hourlyRateInput.value);
-    if (isNaN(rate) || rate < 0) {
-      showStatusMessage(
-        settingsStatusSpan,
-        "Invalid rate. Please enter a positive number.",
-        "error"
-      );
+  // ---=== Event Handlers (Modified for Firebase) ===---
+  const handleSaveSettings = async () => {
+    const rateValue = parseFloat(hourlyRateInput.value);
+    if (isNaN(rateValue) || rateValue < 0) {
+      showStatusMessage(settingsStatusSpan, "Invalid rate. Please enter a positive number.", "error");
       hourlyRateInput.focus();
       return;
     }
-    settings.hourlyRate = rate;
-    saveData();
-    renderEntries(); // Re-render entries with new rate calculation
-    showStatusMessage(settingsStatusSpan, `Rate saved: $${rate.toFixed(2)}`);
+    const newSettings = { hourlyRate: rateValue };
+    try {
+      await saveSettingsToFirebase(newSettings);
+      // The onValue listener for settings will update the UI and 'settings' variable
+      showStatusMessage(settingsStatusSpan, `Rate saved: $${rateValue.toFixed(2)}`);
+    } catch (error) {
+      showStatusMessage(settingsStatusSpan, "Error saving rate.", "error");
+    }
   };
 
-  const handleAddOrUpdateEntry = (isUpdate = false) => {
-    const id = isUpdate ? editEntryIdInput.value : generateId();
+  const handleAddOrUpdateEntry = async (isUpdate = false) => {
+    const entryId = editEntryIdInput.value; // Will be empty if adding, or Firebase key if updating
     const date = entryDateInput.value;
     const start = startTimeInput.value;
     const end = endTimeInput.value;
     const description = descriptionInput.value.trim();
 
-    // Basic validation
     if (!date || !start || !end) {
-      showStatusMessage(
-        entryStatusSpan,
-        "Date, Start Time, and End Time are required.",
-        "error"
-      );
+      showStatusMessage(entryStatusSpan, "Date, Start Time, and End Time are required.", "error");
       return;
     }
 
-    // Validate time order (allow overnight confirmation)
     const duration = calculateDuration(start, end);
     if (start && end && start >= end) {
-      // Check if end time is not later than start time
-      if (
-        !confirm(
-          "End time is earlier than or the same as start time. Is this an overnight shift?"
-        )
-      ) {
+      if (!confirm("End time is earlier than or the same as start time. Is this an overnight shift?")) {
         showStatusMessage(entryStatusSpan, "Entry cancelled.", "error");
         return;
       }
     }
     if (duration <= 0 && start < end) {
-      // Handle invalid time inputs leading to zero/negative duration
-      showStatusMessage(
-        entryStatusSpan,
-        "Invalid time range selected.",
-        "error"
-      );
+      showStatusMessage(entryStatusSpan, "Invalid time range selected.", "error");
       return;
     }
 
-    const entryData = {
-      id,
-      date,
-      startTime: start,
-      endTime: end,
-      description,
-      // Rate at time of entry isn't stored here, using global setting for calculations
-    };
+    const entryData = { date, startTime: start, endTime: end, description };
 
-    if (isUpdate) {
-      const index = entries.findIndex((e) => e.id === id);
-      if (index !== -1) {
-        entries[index] = entryData;
-        showStatusMessage(
-          entryStatusSpan,
-          "Entry updated successfully.",
-          "success"
-        );
+    try {
+      if (isUpdate && entryId) {
+        const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
+        await set(entryRef, entryData); // Use set to overwrite, or update for partial updates
+        showStatusMessage(entryStatusSpan, "Entry updated successfully.", "success");
       } else {
-        showStatusMessage(
-          entryStatusSpan,
-          "Error: Entry not found for update.",
-          "error"
-        );
-        clearForm(); // Reset form if update failed weirdly
-        return; // Exit early
+        const entriesListRef = ref(database, ENTRIES_PATH);
+        await push(entriesListRef, entryData); // push generates a unique ID
+        showStatusMessage(entryStatusSpan, "Entry added successfully.", "success");
       }
-    } else {
-      entries.push(entryData);
-      showStatusMessage(
-        entryStatusSpan,
-        "Entry added successfully.",
-        "success"
-      );
+      // The onValue listener for entries will update the UI and 'entries' array
+      clearForm();
+    } catch (error) {
+      console.error("Error saving entry to Firebase:", error);
+      showStatusMessage(entryStatusSpan, "Error saving entry.", "error");
     }
-
-    saveData();
-    renderEntries();
-    clearForm();
   };
 
-  const handleTableActions = (event) => {
+  const handleTableActions = async (event) => {
     const target = event.target;
-    const entryId = target.dataset.id;
+    const entryId = target.dataset.id; // This is the Firebase key
 
-    if (!entryId) return; // Click wasn't on a button with data-id
+    if (!entryId) return;
 
     if (target.classList.contains("edit-btn")) {
-      const entryToEdit = entries.find((e) => e.id === entryId);
+      const entryToEdit = entries.find(e => e.id === entryId);
       if (entryToEdit) {
         setupEditForm(entryToEdit);
       }
     } else if (target.classList.contains("delete-btn")) {
       if (confirm("Are you sure you want to delete this entry?")) {
-        entries = entries.filter((e) => e.id !== entryId);
-        saveData();
-        renderEntries();
-        showStatusMessage(entryStatusSpan, "Entry deleted.", "success");
-        // If the deleted entry was being edited, clear the form
-        if (editEntryIdInput.value === entryId) {
-          clearForm();
+        try {
+          const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
+          await remove(entryRef);
+          showStatusMessage(entryStatusSpan, "Entry deleted.", "success");
+          // The onValue listener will update the table.
+          // If the deleted entry was being edited, clear the form.
+          if (editEntryIdInput.value === entryId) {
+            clearForm();
+          }
+        } catch (error) {
+          console.error("Error deleting entry from Firebase:", error);
+          showStatusMessage(entryStatusSpan, "Error deleting entry.", "error");
         }
       }
     }
   };
 
+  // Filter and Export functions remain largely the same as they operate on the local 'entries' array,
+  // which is now kept in sync by Firebase's onValue listener.
+
   const handleFilter = () => {
-    // Basic validation: End date should not be before start date
-    if (
-      filterStartDateInput.value &&
-      filterEndDateInput.value &&
-      filterEndDateInput.value < filterStartDateInput.value
-    ) {
-      showStatusMessage(
-        exportStatusSpan,
-        "Filter 'To' date cannot be before 'From' date.",
-        "error"
-      );
+    if (filterStartDateInput.value && filterEndDateInput.value && filterEndDateInput.value < filterStartDateInput.value) {
+      showStatusMessage(exportStatusSpan, "Filter 'To' date cannot be before 'From' date.", "error");
       return;
     }
-
     currentFilter.startDate = filterStartDateInput.value || null;
     currentFilter.endDate = filterEndDateInput.value || null;
-    renderEntries();
-    showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500); // Short message
+    renderEntries(); // Re-render with the new filter
+    showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500);
   };
 
   const handleResetFilter = () => {
@@ -437,58 +374,40 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const handleExportCsv = () => {
-    let filteredEntries = entries;
+    let currentEntriesToExport = entries; // Use the current state of 'entries'
     if (currentFilter.startDate) {
-      filteredEntries = filteredEntries.filter(
-        (e) => e.date >= currentFilter.startDate
-      );
+        currentEntriesToExport = currentEntriesToExport.filter(e => e.date >= currentFilter.startDate);
     }
     if (currentFilter.endDate) {
-      filteredEntries = filteredEntries.filter(
-        (e) => e.date <= currentFilter.endDate
-      );
+        currentEntriesToExport = currentEntriesToExport.filter(e => e.date <= currentFilter.endDate);
     }
 
-    if (filteredEntries.length === 0) {
-      showStatusMessage(
-        exportStatusSpan,
-        "No entries selected to export.",
-        "error"
-      );
+    if (currentEntriesToExport.length === 0) {
+      showStatusMessage(exportStatusSpan, "No entries selected to export.", "error");
       return;
     }
 
-    // Sort for export consistency (same as render)
-    filteredEntries.sort((a, b) => {
+    currentEntriesToExport.sort((a, b) => {
       const dateComparison = b.date.localeCompare(a.date);
       if (dateComparison !== 0) return dateComparison;
       return b.startTime.localeCompare(a.startTime);
     });
 
     const rate = settings.hourlyRate;
-    let csvContent =
-      "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n"; // Header
+    let csvContent = "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n";
 
-    filteredEntries.forEach((entry) => {
+    currentEntriesToExport.forEach((entry) => {
       const duration = calculateDuration(entry.startTime, entry.endTime);
       const pay = duration * rate;
-      // Escape potential commas and quotes in description
-      const escapedDesc = entry.description
-        ? `"${entry.description.replace(/"/g, '""')}"`
-        : "";
-      csvContent += `${entry.date},${entry.startTime},${
-        entry.endTime
-      },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
+      const escapedDesc = entry.description ? `"${entry.description.replace(/"/g, '""')}"` : "";
+      csvContent += `${entry.date},${entry.startTime},${entry.endTime},${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
     });
 
-    // Create and trigger download
     try {
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-
-      // Generate filename
       let filename = "work_hours_export.csv";
       const today = new Date().toISOString().split("T")[0];
       const start = currentFilter.startDate || "all";
@@ -496,50 +415,38 @@ document.addEventListener("DOMContentLoaded", () => {
       if (start !== "all" || end !== today) {
         filename = `work_hours_${start}_to_${end}.csv`;
       }
-
       link.setAttribute("download", filename);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url); // Clean up
+      URL.revokeObjectURL(url);
       showStatusMessage(exportStatusSpan, "CSV export generated.", "success");
     } catch (e) {
       console.error("CSV Export failed:", e);
-      showStatusMessage(
-        exportStatusSpan,
-        "CSV export failed. See console for details.",
-        "error"
-      );
-      // Fallback maybe? Could display in a textarea if needed.
+      showStatusMessage(exportStatusSpan, "CSV export failed. See console for details.", "error");
     }
   };
 
   // ---=== Initialization ===---
-  const initializeApp = () => {
-    loadData();
+  const initializeLocalApp = () => {
+    // Load initial data from Firebase and set up listeners
+    loadSettings();
+    loadEntries();
+
     clearForm(); // Set default date and button states
-    renderEntries(); // Initial render
 
-    // Attach Event Listeners
+    // Event Listeners (mostly unchanged, but actions now trigger Firebase operations)
     saveSettingsBtn.addEventListener("click", handleSaveSettings);
-    addEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(false)); // Explicitly adding
-    updateEntryBtn.addEventListener("click", () =>
-      handleAddOrUpdateEntry(true)
-    ); // Explicitly updating
+    addEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(false));
+    updateEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(true));
     cancelEditBtn.addEventListener("click", clearForm);
-
-    // Use event delegation for edit/delete buttons in the table
     entriesTbody.addEventListener("click", handleTableActions);
-
     filterBtn.addEventListener("click", handleFilter);
     resetFilterBtn.addEventListener("click", handleResetFilter);
     exportCsvBtn.addEventListener("click", handleExportCsv);
-
-    // Optional: Re-calculate totals if rate changes without saving
-    // hourlyRateInput.addEventListener('input', () => { /* maybe update totals dynamically? */ });
   };
 
   // Start the application
-  initializeApp();
+  initializeLocalApp();
 });
