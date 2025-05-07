@@ -20,7 +20,7 @@ const firebaseConfig = {
   messagingSenderId: "406101223329",
   appId: "1:406101223329:web:bca312115c3b61181dcde0",
   measurementId: "G-1ZE97D6KCC",
-  databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com" 
+  databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com",
 };
 
 // Initialize Firebase
