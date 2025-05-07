@@ -8,7 +8,7 @@ import {
   onValue,
   push,
   remove,
-  update,
+  update
 } from "firebase/database";
 
 // Firebase configuration
@@ -20,7 +20,7 @@ const firebaseConfig = {
   messagingSenderId: "406101223329",
   appId: "1:406101223329:web:bca312115c3b61181dcde0",
   measurementId: "G-1ZE97D6KCC",
-  databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com", // ← ADD THIS LINE
+  databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com" 
 };
 
 // Initialize Firebase
@@ -115,32 +115,23 @@ const calculateDuration = (start, end) => {
 // Firebase Data Functions
 const loadSettings = () => {
   const settingsRef = ref(database, SETTINGS_PATH);
-  onValue(
-    settingsRef,
-    (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        settings = data;
-        settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
-        hourlyRateInput.value = settings.hourlyRate.toFixed(2);
-      } else {
-        // Initialize settings in Firebase if they don't exist
-        saveSettingsToFirebase(settings)
-          .then(() => console.log("Default settings saved to Firebase."))
-          .catch((err) => console.error("Error saving default settings:", err));
-      }
-      renderEntries(); // Re-render if rate affects display
-    },
-    (error) => {
-      console.error("Error loading settings from Firebase:", error);
-      showStatusMessage(
-        settingsStatusSpan,
-        "Error loading settings.",
-        "error",
-        5000
-      );
+  onValue(settingsRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      settings = data;
+      settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
+      hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+    } else {
+      // Initialize settings in Firebase if they don't exist
+      saveSettingsToFirebase(settings)
+        .then(() => console.log("Default settings saved to Firebase."))
+        .catch(err => console.error("Error saving default settings:", err));
     }
-  );
+    renderEntries(); // Re-render if rate affects display
+  }, (error) => {
+    console.error("Error loading settings from Firebase:", error);
+    showStatusMessage(settingsStatusSpan, "Error loading settings.", "error", 5000);
+  });
 };
 
 const saveSettingsToFirebase = async (newSettings) => {
@@ -156,30 +147,21 @@ const saveSettingsToFirebase = async (newSettings) => {
 
 const loadEntries = () => {
   const entriesDbRef = ref(database, ENTRIES_PATH);
-  onValue(
-    entriesDbRef,
-    (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        entries = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-      } else {
-        entries = [];
-      }
-      renderEntries();
-    },
-    (error) => {
-      console.error("Error loading entries from Firebase:", error);
-      showStatusMessage(
-        entryStatusSpan,
-        "Error loading entries.",
-        "error",
-        5000
-      );
+  onValue(entriesDbRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      entries = Object.keys(data).map(key => ({
+        id: key,
+        ...data[key]
+      }));
+    } else {
+      entries = [];
     }
-  );
+    renderEntries();
+  }, (error) => {
+    console.error("Error loading entries from Firebase:", error);
+    showStatusMessage(entryStatusSpan, "Error loading entries.", "error", 5000);
+  });
 };
 
 // Core Logic Functions
@@ -189,14 +171,10 @@ const renderEntries = () => {
   const rate = parseFloat(settings.hourlyRate) || 0;
 
   if (currentFilter.startDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date >= currentFilter.startDate
-    );
+    filteredEntries = filteredEntries.filter(e => e.date >= currentFilter.startDate);
   }
   if (currentFilter.endDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date <= currentFilter.endDate
-    );
+    filteredEntries = filteredEntries.filter(e => e.date <= currentFilter.endDate);
   }
 
   filteredEntries.sort((a, b) => {
@@ -225,23 +203,17 @@ const renderEntries = () => {
         <td>${entry.startTime}</td>
         <td>${entry.endTime}</td>
         <td>${duration.toFixed(2)}</td>
-        <td><span class="description" title="${entry.description || ""}">${
-        entry.description || "-"
-      }</span></td>
+        <td><span class="description" title="${entry.description || ""}">${entry.description || "-"}</span></td>
         <td>${pay.toFixed(2)}</td>
         <td class="actions">
-          <button class="btn btn-warning btn-sm edit-btn" data-id="${
-            entry.id
-          }">Edit</button>
-          <button class="btn btn-danger btn-sm delete-btn" data-id="${
-            entry.id
-          }">Del</button>
+          <button class="btn btn-warning btn-sm edit-btn" data-id="${entry.id}">Edit</button>
+          <button class="btn btn-danger btn-sm delete-btn" data-id="${entry.id}">Del</button>
         </td>
       `;
       entriesTbody.appendChild(tr);
     });
   }
-
+  
   totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
   totalPayFilteredSpan.textContent = totalPay.toFixed(2);
 };
@@ -274,21 +246,14 @@ const setupEditForm = (entry) => {
 const handleSaveSettings = async () => {
   const rateValue = parseFloat(hourlyRateInput.value);
   if (isNaN(rateValue) || rateValue < 0) {
-    showStatusMessage(
-      settingsStatusSpan,
-      "Invalid rate. Please enter a positive number.",
-      "error"
-    );
+    showStatusMessage(settingsStatusSpan, "Invalid rate. Please enter a positive number.", "error");
     hourlyRateInput.focus();
     return;
   }
   const newSettings = { hourlyRate: rateValue };
   try {
     await saveSettingsToFirebase(newSettings);
-    showStatusMessage(
-      settingsStatusSpan,
-      `Rate saved: $${rateValue.toFixed(2)}`
-    );
+    showStatusMessage(settingsStatusSpan, `Rate saved: $${rateValue.toFixed(2)}`);
   } catch (error) {
     showStatusMessage(settingsStatusSpan, "Error saving rate.", "error");
   }
@@ -302,21 +267,13 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
   const description = descriptionInput.value.trim();
 
   if (!date || !start || !end) {
-    showStatusMessage(
-      entryStatusSpan,
-      "Date, Start Time, and End Time are required.",
-      "error"
-    );
+    showStatusMessage(entryStatusSpan, "Date, Start Time, and End Time are required.", "error");
     return;
   }
 
   const duration = calculateDuration(start, end);
   if (start && end && start >= end) {
-    if (
-      !confirm(
-        "End time is earlier than or the same as start time. Is this an overnight shift?"
-      )
-    ) {
+    if (!confirm("End time is earlier than or the same as start time. Is this an overnight shift?")) {
       showStatusMessage(entryStatusSpan, "Entry cancelled.", "error");
       return;
     }
@@ -332,19 +289,11 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
     if (isUpdate && entryId) {
       const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
       await set(entryRef, entryData);
-      showStatusMessage(
-        entryStatusSpan,
-        "Entry updated successfully.",
-        "success"
-      );
+      showStatusMessage(entryStatusSpan, "Entry updated successfully.", "success");
     } else {
       const entriesListRef = ref(database, ENTRIES_PATH);
       await push(entriesListRef, entryData);
-      showStatusMessage(
-        entryStatusSpan,
-        "Entry added successfully.",
-        "success"
-      );
+      showStatusMessage(entryStatusSpan, "Entry added successfully.", "success");
     }
     clearForm();
   } catch (error) {
@@ -360,7 +309,7 @@ const handleTableActions = async (event) => {
   if (!entryId) return;
 
   if (target.classList.contains("edit-btn")) {
-    const entryToEdit = entries.find((e) => e.id === entryId);
+    const entryToEdit = entries.find(e => e.id === entryId);
     if (entryToEdit) {
       setupEditForm(entryToEdit);
     }
@@ -382,16 +331,8 @@ const handleTableActions = async (event) => {
 };
 
 const handleFilter = () => {
-  if (
-    filterStartDateInput.value &&
-    filterEndDateInput.value &&
-    filterEndDateInput.value < filterStartDateInput.value
-  ) {
-    showStatusMessage(
-      exportStatusSpan,
-      "Filter 'To' date cannot be before 'From' date.",
-      "error"
-    );
+  if (filterStartDateInput.value && filterEndDateInput.value && filterEndDateInput.value < filterStartDateInput.value) {
+    showStatusMessage(exportStatusSpan, "Filter 'To' date cannot be before 'From' date.", "error");
     return;
   }
   currentFilter.startDate = filterStartDateInput.value || null;
@@ -412,22 +353,14 @@ const handleResetFilter = () => {
 const handleExportCsv = () => {
   let filteredEntries = entries;
   if (currentFilter.startDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date >= currentFilter.startDate
-    );
+    filteredEntries = filteredEntries.filter(e => e.date >= currentFilter.startDate);
   }
   if (currentFilter.endDate) {
-    filteredEntries = filteredEntries.filter(
-      (e) => e.date <= currentFilter.endDate
-    );
+    filteredEntries = filteredEntries.filter(e => e.date <= currentFilter.endDate);
   }
 
   if (filteredEntries.length === 0) {
-    showStatusMessage(
-      exportStatusSpan,
-      "No entries selected to export.",
-      "error"
-    );
+    showStatusMessage(exportStatusSpan, "No entries selected to export.", "error");
     return;
   }
 
@@ -438,18 +371,13 @@ const handleExportCsv = () => {
   });
 
   const rate = settings.hourlyRate;
-  let csvContent =
-    "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n";
+  let csvContent = "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n";
 
   filteredEntries.forEach((entry) => {
     const duration = calculateDuration(entry.startTime, entry.endTime);
     const pay = duration * rate;
-    const escapedDesc = entry.description
-      ? `"${entry.description.replace(/"/g, '""')}"`
-      : "";
-    csvContent += `${entry.date},${entry.startTime},${
-      entry.endTime
-    },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
+    const escapedDesc = entry.description ? `"${entry.description.replace(/"/g, '""')}"` : "";
+    csvContent += `${entry.date},${entry.startTime},${entry.endTime},${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
   });
 
   try {
@@ -473,11 +401,7 @@ const handleExportCsv = () => {
     showStatusMessage(exportStatusSpan, "CSV export generated.", "success");
   } catch (e) {
     console.error("CSV Export failed:", e);
-    showStatusMessage(
-      exportStatusSpan,
-      "CSV export failed. See console for details.",
-      "error"
-    );
+    showStatusMessage(exportStatusSpan, "CSV export failed. See console for details.", "error");
   }
 };
 
@@ -485,7 +409,7 @@ const handleExportCsv = () => {
 const initializeApp = () => {
   // Set the default date in the form
   clearForm();
-
+  
   // Load data from Firebase and set up listeners
   loadSettings();
   loadEntries();
