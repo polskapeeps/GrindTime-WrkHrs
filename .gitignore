@@ -2,5 +2,6 @@
 .references/
 .docs/
 .playground/
+firebase/
 
 node_modules/
