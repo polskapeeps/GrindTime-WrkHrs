@@ -1,5 +1,5 @@
 // Import the Firebase functions
-import { initializeApp } from "firebase/app";
+import { initializeApp } from "firebase/app"; // This is Firebase's initializeApp
 import { getAnalytics } from "firebase/analytics";
 import {
   getDatabase,
@@ -23,7 +23,7 @@ const firebaseConfig = {
   databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com",
 };
 
-// Initialize Firebase
+// Initialize Firebase (uses the imported 'initializeApp' from the SDK)
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const database = getDatabase(app);
@@ -103,6 +103,9 @@ const calculateDuration = (start, end) => {
     if (isNaN(startDate) || isNaN(endDate)) return 0;
     let diffMs = endDate - startDate;
     if (diffMs <= 0) {
+      // Assumes overnight if end time is earlier or same and start is not null
+      // More robust overnight logic might be needed if entries can span more than 24 hours
+      // or if a day boundary isn't crossed. For now, this handles simple overnight.
       diffMs += 24 * 60 * 60 * 1000;
     }
     return diffMs / (1000 * 60 * 60);
@@ -180,7 +183,7 @@ const renderEntries = () => {
   filteredEntries.sort((a, b) => {
     const dateComparison = b.date.localeCompare(a.date);
     if (dateComparison !== 0) return dateComparison;
-    return b.startTime.localeCompare(a.startTime);
+    return b.startTime.localeCompare(a.startTime); // Secondary sort by start time if dates are same
   });
 
   let totalHours = 0;
@@ -213,14 +216,14 @@ const renderEntries = () => {
       entriesTbody.appendChild(tr);
     });
   }
-  
+
   totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
   totalPayFilteredSpan.textContent = totalPay.toFixed(2);
 };
 
 const clearForm = () => {
   editEntryIdInput.value = "";
-  entryDateInput.value = new Date().toISOString().split("T")[0];
+  entryDateInput.value = new Date().toISOString().split("T")[0]; // Default to today
   startTimeInput.value = "";
   endTimeInput.value = "";
   descriptionInput.value = "";
@@ -272,23 +275,30 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
   }
 
   const duration = calculateDuration(start, end);
-  if (start && end && start >= end) {
-    if (!confirm("End time is earlier than or the same as start time. Is this an overnight shift?")) {
-      showStatusMessage(entryStatusSpan, "Entry cancelled.", "error");
-      return;
+  // Specific check for non-overnight shifts where end time is before start time
+  if (start && end && start > end && duration < 12) { // Assuming an overnight shift wouldn't naturally result in a duration < 12 if calculated straight
+     if (!confirm("End time is earlier than start time. Is this an overnight shift? If not, the times may be incorrect.")) {
+        showStatusMessage(entryStatusSpan, "Entry cancelled. Please verify times.", "error");
+        return;
     }
+  } else if (start === end) {
+     showStatusMessage(entryStatusSpan, "Start and End times cannot be the same unless it's a 24-hour entry (handled as overnight). Please adjust.", "error");
+     return;
   }
-  if (duration <= 0 && start < end) {
-    showStatusMessage(entryStatusSpan, "Invalid time range selected.", "error");
+
+
+  if (duration <= 0 && start < end) { // This case should ideally not happen if calculateDuration is correct with non-overnight
+    showStatusMessage(entryStatusSpan, "Invalid time range selected resulting in zero or negative duration.", "error");
     return;
   }
+
 
   const entryData = { date, startTime: start, endTime: end, description };
 
   try {
     if (isUpdate && entryId) {
       const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
-      await set(entryRef, entryData);
+      await set(entryRef, entryData); // Using set for update to overwrite the existing entry
       showStatusMessage(entryStatusSpan, "Entry updated successfully.", "success");
     } else {
       const entriesListRef = ref(database, ENTRIES_PATH);
@@ -296,6 +306,7 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
       showStatusMessage(entryStatusSpan, "Entry added successfully.", "success");
     }
     clearForm();
+    // renderEntries(); // loadEntries already calls this via onValue, so this might be redundant
   } catch (error) {
     console.error("Error saving entry to Firebase:", error);
     showStatusMessage(entryStatusSpan, "Error saving entry.", "error");
@@ -306,7 +317,7 @@ const handleTableActions = async (event) => {
   const target = event.target;
   const entryId = target.dataset.id;
 
-  if (!entryId) return;
+  if (!entryId) return; // Clicked somewhere else in the tbody
 
   if (target.classList.contains("edit-btn")) {
     const entryToEdit = entries.find(e => e.id === entryId);
@@ -319,9 +330,10 @@ const handleTableActions = async (event) => {
         const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
         await remove(entryRef);
         showStatusMessage(entryStatusSpan, "Entry deleted.", "success");
-        if (editEntryIdInput.value === entryId) {
+        if (editEntryIdInput.value === entryId) { // If deleting the entry currently in edit form
           clearForm();
         }
+        // renderEntries(); // loadEntries already calls this via onValue
       } catch (error) {
         console.error("Error deleting entry from Firebase:", error);
         showStatusMessage(entryStatusSpan, "Error deleting entry.", "error");
@@ -332,13 +344,13 @@ const handleTableActions = async (event) => {
 
 const handleFilter = () => {
   if (filterStartDateInput.value && filterEndDateInput.value && filterEndDateInput.value < filterStartDateInput.value) {
-    showStatusMessage(exportStatusSpan, "Filter 'To' date cannot be before 'From' date.", "error");
+    showStatusMessage(exportStatusSpan, "Filter 'To' date cannot be before 'From' date.", "error"); // Use exportStatusSpan or another relevant one
     return;
   }
   currentFilter.startDate = filterStartDateInput.value || null;
   currentFilter.endDate = filterEndDateInput.value || null;
   renderEntries();
-  showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500);
+  showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500); // Use exportStatusSpan or another relevant one
 };
 
 const handleResetFilter = () => {
@@ -347,7 +359,7 @@ const handleResetFilter = () => {
   currentFilter.startDate = null;
   currentFilter.endDate = null;
   renderEntries();
-  showStatusMessage(exportStatusSpan, "Filter reset.", "success", 1500);
+  showStatusMessage(exportStatusSpan, "Filter reset.", "success", 1500); // Use exportStatusSpan or another relevant one
 };
 
 const handleExportCsv = () => {
@@ -364,6 +376,7 @@ const handleExportCsv = () => {
     return;
   }
 
+  // Sort entries for export, consistent with display
   filteredEntries.sort((a, b) => {
     const dateComparison = b.date.localeCompare(a.date);
     if (dateComparison !== 0) return dateComparison;
@@ -376,7 +389,7 @@ const handleExportCsv = () => {
   filteredEntries.forEach((entry) => {
     const duration = calculateDuration(entry.startTime, entry.endTime);
     const pay = duration * rate;
-    const escapedDesc = entry.description ? `"${entry.description.replace(/"/g, '""')}"` : "";
+    const escapedDesc = entry.description ? `"${entry.description.replace(/"/g, '""')}"` : ""; // Handle quotes in description
     csvContent += `${entry.date},${entry.startTime},${entry.endTime},${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
   });
 
@@ -385,13 +398,18 @@ const handleExportCsv = () => {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
+
     let filename = "work_hours_export.csv";
     const today = new Date().toISOString().split("T")[0];
     const start = currentFilter.startDate || "all";
-    const end = currentFilter.endDate || today;
+    const end = currentFilter.endDate || today; // Default end to today if not specified for filename
     if (start !== "all" || end !== today) {
-      filename = `work_hours_${start}_to_${end}.csv`;
+        // Make sure start and end are actual dates for the filename
+        const actualStart = currentFilter.startDate || "beginning";
+        const actualEnd = currentFilter.endDate || new Date().toISOString().split("T")[0];
+        filename = `work_hours_${actualStart}_to_${actualEnd}.csv`;
     }
+
     link.setAttribute("download", filename);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -405,25 +423,28 @@ const handleExportCsv = () => {
   }
 };
 
-// Initialize App
-const initializeApp = () => {
+// *** EDITED SECTION ***
+// Renamed this function from initializeApp to setupApplication
+const setupApplication = () => {
   // Set the default date in the form
   clearForm();
-  
+
   // Load data from Firebase and set up listeners
   loadSettings();
   loadEntries();
 
   // Set up event listeners
-  saveSettingsBtn.addEventListener("click", handleSaveSettings);
-  addEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(false));
-  updateEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(true));
-  cancelEditBtn.addEventListener("click", clearForm);
-  entriesTbody.addEventListener("click", handleTableActions);
-  filterBtn.addEventListener("click", handleFilter);
-  resetFilterBtn.addEventListener("click", handleResetFilter);
-  exportCsvBtn.addEventListener("click", handleExportCsv);
+  if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", handleSaveSettings);
+  if (addEntryBtn) addEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(false));
+  if (updateEntryBtn) updateEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(true));
+  if (cancelEditBtn) cancelEditBtn.addEventListener("click", clearForm);
+  if (entriesTbody) entriesTbody.addEventListener("click", handleTableActions);
+  if (filterBtn) filterBtn.addEventListener("click", handleFilter);
+  if (resetFilterBtn) resetFilterBtn.addEventListener("click", handleResetFilter);
+  if (exportCsvBtn) exportCsvBtn.addEventListener("click", handleExportCsv);
 };
 
 // Start the application once the DOM is fully loaded
-initializeApp();
+// Call the renamed function
+setupApplication();
+// *** END EDITED SECTION ***
