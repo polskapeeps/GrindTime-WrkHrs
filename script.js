@@ -1,32 +1,33 @@
-// Import the Firebase functions
-import { initializeApp } from "firebase/app"; // This is Firebase's initializeApp
-import { getAnalytics } from "firebase/analytics";
-import {
-  getDatabase,
-  ref,
-  set,
-  onValue,
-  push,
-  remove,
-  update
-} from "firebase/database";
+// Firebase functions are now available globally via the 'firebase' object
+// Remove the ES6 import statements for Firebase:
+// import { initializeApp } from "firebase/app";
+// import { getAnalytics } from "firebase/analytics";
+// import {
+//   getDatabase,
+//   ref,
+//   set,
+//   onValue,
+//   push,
+//   remove,
+//   update
+// } from "firebase/database";
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDqusLzhEc3GvFElGRdi6mjxtxhLuInYrA",
-  authDomain: "grind-time-747f4.firebaseapp.com",
-  projectId: "grind-time-747f4",
-  storageBucket: "grind-time-747f4.firebasestorage.app",
-  messagingSenderId: "406101223329",
-  appId: "1:406101223329:web:bca312115c3b61181dcde0",
-  measurementId: "G-1ZE97D6KCC",
-  databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com",
-};
+// Firebase configuration (ensure this is your actual project config)
+ const firebaseConfig = {
+    apiKey: "AIzaSyDqusLzhEc3GvFElGRdi6mjxtxhLuInYrA",
+    authDomain: "grind-time-747f4.firebaseapp.com",
+    databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com",
+    projectId: "grind-time-747f4",
+    storageBucket: "grind-time-747f4.firebasestorage.app",
+    messagingSenderId: "406101223329",
+    appId: "1:406101223329:web:bca312115c3b61181dcde0",
+    measurementId: "G-1ZE97D6KCC"
+  };
 
-// Initialize Firebase (uses the imported 'initializeApp' from the SDK)
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+// Initialize Firebase using the global 'firebase' object from the CDN scripts
+const app = firebase.initializeApp(firebaseConfig);
+const analytics = firebase.analytics(app);
+const database = firebase.database(app); // Get the database instance
 
 // Firebase path references
 const SETTINGS_PATH = "settings";
@@ -71,7 +72,7 @@ let statusTimeout = null;
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const [year, month, day] = dateString.split("-").map(Number);
-  const dateObj = new Date(Date.UTC(year, month - 1, day));
+  const dateObj = new Date(Date.UTC(year, month - 1, day)); // Use UTC to avoid timezone issues with date only
   return dateObj.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
@@ -98,14 +99,11 @@ const showStatusMessage = (
 const calculateDuration = (start, end) => {
   if (!start || !end) return 0;
   try {
-    const startDate = new Date(`1970-01-01T${start}:00Z`);
+    const startDate = new Date(`1970-01-01T${start}:00Z`); // Assume UTC for time calculation consistency
     const endDate = new Date(`1970-01-01T${end}:00Z`);
     if (isNaN(startDate) || isNaN(endDate)) return 0;
     let diffMs = endDate - startDate;
-    if (diffMs <= 0) {
-      // Assumes overnight if end time is earlier or same and start is not null
-      // More robust overnight logic might be needed if entries can span more than 24 hours
-      // or if a day boundary isn't crossed. For now, this handles simple overnight.
+    if (diffMs <= 0) { // Handles overnight if end time is earlier or same
       diffMs += 24 * 60 * 60 * 1000;
     }
     return diffMs / (1000 * 60 * 60);
@@ -117,30 +115,29 @@ const calculateDuration = (start, end) => {
 
 // Firebase Data Functions
 const loadSettings = () => {
-  const settingsRef = ref(database, SETTINGS_PATH);
-  onValue(settingsRef, (snapshot) => {
+  const settingsRef = firebase.database().ref(SETTINGS_PATH); // Use global firebase.database().ref()
+  firebase.database().onValue(settingsRef, (snapshot) => { // Use global firebase.database().onValue()
     const data = snapshot.val();
     if (data) {
       settings = data;
       settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
-      hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+      if (hourlyRateInput) hourlyRateInput.value = settings.hourlyRate.toFixed(2);
     } else {
-      // Initialize settings in Firebase if they don't exist
       saveSettingsToFirebase(settings)
         .then(() => console.log("Default settings saved to Firebase."))
         .catch(err => console.error("Error saving default settings:", err));
     }
-    renderEntries(); // Re-render if rate affects display
+    renderEntries();
   }, (error) => {
     console.error("Error loading settings from Firebase:", error);
-    showStatusMessage(settingsStatusSpan, "Error loading settings.", "error", 5000);
+    if (settingsStatusSpan) showStatusMessage(settingsStatusSpan, "Error loading settings.", "error", 5000);
   });
 };
 
 const saveSettingsToFirebase = async (newSettings) => {
-  const settingsRef = ref(database, SETTINGS_PATH);
+  const settingsRef = firebase.database().ref(SETTINGS_PATH);
   try {
-    await set(settingsRef, newSettings);
+    await firebase.database().set(settingsRef, newSettings); // Use global firebase.database().set()
     return true;
   } catch (error) {
     console.error("Error saving settings to Firebase:", error);
@@ -149,8 +146,8 @@ const saveSettingsToFirebase = async (newSettings) => {
 };
 
 const loadEntries = () => {
-  const entriesDbRef = ref(database, ENTRIES_PATH);
-  onValue(entriesDbRef, (snapshot) => {
+  const entriesDbRef = firebase.database().ref(ENTRIES_PATH);
+  firebase.database().onValue(entriesDbRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
       entries = Object.keys(data).map(key => ({
@@ -163,12 +160,14 @@ const loadEntries = () => {
     renderEntries();
   }, (error) => {
     console.error("Error loading entries from Firebase:", error);
-    showStatusMessage(entryStatusSpan, "Error loading entries.", "error", 5000);
+    if (entryStatusSpan) showStatusMessage(entryStatusSpan, "Error loading entries.", "error", 5000);
   });
 };
 
 // Core Logic Functions
 const renderEntries = () => {
+  if (!entriesTbody || !totalHoursFilteredSpan || !totalPayFilteredSpan || !noEntriesMessage) return;
+
   entriesTbody.innerHTML = "";
   let filteredEntries = entries;
   const rate = parseFloat(settings.hourlyRate) || 0;
@@ -183,7 +182,7 @@ const renderEntries = () => {
   filteredEntries.sort((a, b) => {
     const dateComparison = b.date.localeCompare(a.date);
     if (dateComparison !== 0) return dateComparison;
-    return b.startTime.localeCompare(a.startTime); // Secondary sort by start time if dates are same
+    return b.startTime.localeCompare(a.startTime);
   });
 
   let totalHours = 0;
@@ -222,17 +221,18 @@ const renderEntries = () => {
 };
 
 const clearForm = () => {
-  editEntryIdInput.value = "";
-  entryDateInput.value = new Date().toISOString().split("T")[0]; // Default to today
-  startTimeInput.value = "";
-  endTimeInput.value = "";
-  descriptionInput.value = "";
-  addEntryBtn.hidden = false;
-  updateEntryBtn.hidden = true;
-  cancelEditBtn.hidden = true;
+  if (editEntryIdInput) editEntryIdInput.value = "";
+  if (entryDateInput) entryDateInput.value = new Date().toISOString().split("T")[0];
+  if (startTimeInput) startTimeInput.value = "";
+  if (endTimeInput) endTimeInput.value = "";
+  if (descriptionInput) descriptionInput.value = "";
+  if (addEntryBtn) addEntryBtn.hidden = false;
+  if (updateEntryBtn) updateEntryBtn.hidden = true;
+  if (cancelEditBtn) cancelEditBtn.hidden = true;
 };
 
 const setupEditForm = (entry) => {
+  if (!editEntryIdInput || !entryDateInput || !startTimeInput || !endTimeInput || !descriptionInput || !addEntryBtn || !updateEntryBtn || !cancelEditBtn || !entryFormCard) return;
   editEntryIdInput.value = entry.id;
   entryDateInput.value = entry.date;
   startTimeInput.value = entry.startTime;
@@ -247,6 +247,7 @@ const setupEditForm = (entry) => {
 
 // Event Handlers
 const handleSaveSettings = async () => {
+  if (!hourlyRateInput || !settingsStatusSpan) return;
   const rateValue = parseFloat(hourlyRateInput.value);
   if (isNaN(rateValue) || rateValue < 0) {
     showStatusMessage(settingsStatusSpan, "Invalid rate. Please enter a positive number.", "error");
@@ -263,7 +264,9 @@ const handleSaveSettings = async () => {
 };
 
 const handleAddOrUpdateEntry = async (isUpdate = false) => {
-  const entryId = editEntryIdInput.value; // Will be empty if adding
+  if (!editEntryIdInput || !entryDateInput || !startTimeInput || !endTimeInput || !descriptionInput || !entryStatusSpan) return;
+
+  const entryId = editEntryIdInput.value;
   const date = entryDateInput.value;
   const start = startTimeInput.value;
   const end = endTimeInput.value;
@@ -275,38 +278,35 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
   }
 
   const duration = calculateDuration(start, end);
-  // Specific check for non-overnight shifts where end time is before start time
-  if (start && end && start > end && duration < 12) { // Assuming an overnight shift wouldn't naturally result in a duration < 12 if calculated straight
+  if (start && end && start > end && duration < 12) {
      if (!confirm("End time is earlier than start time. Is this an overnight shift? If not, the times may be incorrect.")) {
         showStatusMessage(entryStatusSpan, "Entry cancelled. Please verify times.", "error");
         return;
     }
   } else if (start === end) {
-     showStatusMessage(entryStatusSpan, "Start and End times cannot be the same unless it's a 24-hour entry (handled as overnight). Please adjust.", "error");
+     showStatusMessage(entryStatusSpan, "Start and End times cannot be the same unless it's a 24-hour entry. Please adjust.", "error");
      return;
   }
 
-
-  if (duration <= 0 && start < end) { // This case should ideally not happen if calculateDuration is correct with non-overnight
-    showStatusMessage(entryStatusSpan, "Invalid time range selected resulting in zero or negative duration.", "error");
+  if (duration <= 0 && start < end) {
+    showStatusMessage(entryStatusSpan, "Invalid time range. Duration is zero or negative.", "error");
     return;
   }
-
 
   const entryData = { date, startTime: start, endTime: end, description };
 
   try {
     if (isUpdate && entryId) {
-      const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
-      await set(entryRef, entryData); // Using set for update to overwrite the existing entry
+      const entryRef = firebase.database().ref(`${ENTRIES_PATH}/${entryId}`);
+      await firebase.database().set(entryRef, entryData); // Use global firebase.database().set()
       showStatusMessage(entryStatusSpan, "Entry updated successfully.", "success");
     } else {
-      const entriesListRef = ref(database, ENTRIES_PATH);
-      await push(entriesListRef, entryData);
+      const entriesListRef = firebase.database().ref(ENTRIES_PATH);
+      await firebase.database().push(entriesListRef, entryData); // Use global firebase.database().push()
       showStatusMessage(entryStatusSpan, "Entry added successfully.", "success");
     }
     clearForm();
-    // renderEntries(); // loadEntries already calls this via onValue, so this might be redundant
+    // renderEntries(); // Not strictly needed as onValue in loadEntries will trigger it
   } catch (error) {
     console.error("Error saving entry to Firebase:", error);
     showStatusMessage(entryStatusSpan, "Error saving entry.", "error");
@@ -314,10 +314,11 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
 };
 
 const handleTableActions = async (event) => {
+  if (!entryStatusSpan || !editEntryIdInput) return;
   const target = event.target;
   const entryId = target.dataset.id;
 
-  if (!entryId) return; // Clicked somewhere else in the tbody
+  if (!entryId) return;
 
   if (target.classList.contains("edit-btn")) {
     const entryToEdit = entries.find(e => e.id === entryId);
@@ -327,13 +328,13 @@ const handleTableActions = async (event) => {
   } else if (target.classList.contains("delete-btn")) {
     if (confirm("Are you sure you want to delete this entry?")) {
       try {
-        const entryRef = ref(database, `${ENTRIES_PATH}/${entryId}`);
-        await remove(entryRef);
+        const entryRef = firebase.database().ref(`${ENTRIES_PATH}/${entryId}`);
+        await firebase.database().remove(entryRef); // Use global firebase.database().remove()
         showStatusMessage(entryStatusSpan, "Entry deleted.", "success");
-        if (editEntryIdInput.value === entryId) { // If deleting the entry currently in edit form
+        if (editEntryIdInput.value === entryId) {
           clearForm();
         }
-        // renderEntries(); // loadEntries already calls this via onValue
+        // renderEntries(); // Not strictly needed
       } catch (error) {
         console.error("Error deleting entry from Firebase:", error);
         showStatusMessage(entryStatusSpan, "Error deleting entry.", "error");
@@ -343,26 +344,29 @@ const handleTableActions = async (event) => {
 };
 
 const handleFilter = () => {
+  if (!filterStartDateInput || !filterEndDateInput || !exportStatusSpan) return;
   if (filterStartDateInput.value && filterEndDateInput.value && filterEndDateInput.value < filterStartDateInput.value) {
-    showStatusMessage(exportStatusSpan, "Filter 'To' date cannot be before 'From' date.", "error"); // Use exportStatusSpan or another relevant one
+    showStatusMessage(exportStatusSpan, "Filter 'To' date cannot be before 'From' date.", "error");
     return;
   }
   currentFilter.startDate = filterStartDateInput.value || null;
   currentFilter.endDate = filterEndDateInput.value || null;
   renderEntries();
-  showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500); // Use exportStatusSpan or another relevant one
+  showStatusMessage(exportStatusSpan, "Filter applied.", "success", 1500);
 };
 
 const handleResetFilter = () => {
+  if (!filterStartDateInput || !filterEndDateInput || !exportStatusSpan) return;
   filterStartDateInput.value = "";
   filterEndDateInput.value = "";
   currentFilter.startDate = null;
   currentFilter.endDate = null;
   renderEntries();
-  showStatusMessage(exportStatusSpan, "Filter reset.", "success", 1500); // Use exportStatusSpan or another relevant one
+  showStatusMessage(exportStatusSpan, "Filter reset.", "success", 1500);
 };
 
 const handleExportCsv = () => {
+  if (!exportStatusSpan) return;
   let filteredEntries = entries;
   if (currentFilter.startDate) {
     filteredEntries = filteredEntries.filter(e => e.date >= currentFilter.startDate);
@@ -376,7 +380,6 @@ const handleExportCsv = () => {
     return;
   }
 
-  // Sort entries for export, consistent with display
   filteredEntries.sort((a, b) => {
     const dateComparison = b.date.localeCompare(a.date);
     if (dateComparison !== 0) return dateComparison;
@@ -389,7 +392,7 @@ const handleExportCsv = () => {
   filteredEntries.forEach((entry) => {
     const duration = calculateDuration(entry.startTime, entry.endTime);
     const pay = duration * rate;
-    const escapedDesc = entry.description ? `"${entry.description.replace(/"/g, '""')}"` : ""; // Handle quotes in description
+    const escapedDesc = entry.description ? `"${entry.description.replace(/"/g, '""')}"` : "";
     csvContent += `${entry.date},${entry.startTime},${entry.endTime},${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
   });
 
@@ -402,9 +405,8 @@ const handleExportCsv = () => {
     let filename = "work_hours_export.csv";
     const today = new Date().toISOString().split("T")[0];
     const start = currentFilter.startDate || "all";
-    const end = currentFilter.endDate || today; // Default end to today if not specified for filename
+    const end = currentFilter.endDate || today;
     if (start !== "all" || end !== today) {
-        // Make sure start and end are actual dates for the filename
         const actualStart = currentFilter.startDate || "beginning";
         const actualEnd = currentFilter.endDate || new Date().toISOString().split("T")[0];
         filename = `work_hours_${actualStart}_to_${actualEnd}.csv`;
@@ -423,17 +425,11 @@ const handleExportCsv = () => {
   }
 };
 
-// *** EDITED SECTION ***
-// Renamed this function from initializeApp to setupApplication
 const setupApplication = () => {
-  // Set the default date in the form
   clearForm();
-
-  // Load data from Firebase and set up listeners
   loadSettings();
   loadEntries();
 
-  // Set up event listeners
   if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", handleSaveSettings);
   if (addEntryBtn) addEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(false));
   if (updateEntryBtn) updateEntryBtn.addEventListener("click", () => handleAddOrUpdateEntry(true));
@@ -445,6 +441,4 @@ const setupApplication = () => {
 };
 
 // Start the application once the DOM is fully loaded
-// Call the renamed function
 setupApplication();
-// *** END EDITED SECTION ***
