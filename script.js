@@ -13,16 +13,16 @@
 // } from "firebase/database";
 
 // Firebase configuration (ensure this is your actual project config)
- const firebaseConfig = {
-    apiKey: "AIzaSyDqusLzhEc3GvFElGRdi6mjxtxhLuInYrA",
-    authDomain: "grind-time-747f4.firebaseapp.com",
-    databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com",
-    projectId: "grind-time-747f4",
-    storageBucket: "grind-time-747f4.firebasestorage.app",
-    messagingSenderId: "406101223329",
-    appId: "1:406101223329:web:bca312115c3b61181dcde0",
-    measurementId: "G-1ZE97D6KCC"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDqusLzhEc3GvFElGRdi6mjxtxhLuInYrA", // Use your actual API key
+  authDomain: "grind-time-747f4.firebaseapp.com",
+  projectId: "grind-time-747f4",
+  storageBucket: "grind-time-747f4.firebasestorage.app",
+  messagingSenderId: "406101223329",
+  appId: "1:406101223329:web:bca312115c3b61181dcde0",
+  measurementId: "G-1ZE97D6KCC",
+  databaseURL: "https://grind-time-747f4-default-rtdb.firebaseio.com",
+};
 
 // Initialize Firebase using the global 'firebase' object from the CDN scripts
 const app = firebase.initializeApp(firebaseConfig);
