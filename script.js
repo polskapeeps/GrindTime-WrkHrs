@@ -1,6 +1,7 @@
-// script.js (Root version - Updated for Anonymous Auth & User-Specific Data)
+// script.js (Root Version - Updated for Anonymous Auth & User-Specific Data)
 
 // --- Firebase SDK Imports ---
+// Using version 11.7.1 as per your last working local setup
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-analytics.js"; // Optional
 import {
@@ -10,7 +11,7 @@ import {
   onValue,
   push,
   remove,
-  // update, // 'update' wasn't explicitly used in your original data functions, set can overwrite
+  // update, // Not used in your original data functions, 'set' overwrites
 } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-database.js";
 // ---> ADD THESE AUTH IMPORTS FOR ANONYMOUS SIGN-IN <---
 import {
@@ -40,7 +41,7 @@ const analytics = getAnalytics(app); // Optional
 const database = getDatabase(app);
 const auth = getAuth(app); // Initialize Auth
 
-// --- APP CHECK INITIALIZATION (add when ready) ---
+// --- APP CHECK INITIALIZATION (add when ready for security) ---
 // const appCheck = initializeAppCheck(app, {
 //   provider: new ReCaptchaV3Provider('YOUR_RECAPTCHA_V3_SITE_KEY_HERE'),
 //   isTokenAutoRefreshEnabled: true
@@ -49,11 +50,10 @@ const auth = getAuth(app); // Initialize Auth
 // --- State variable for current user UID ---
 let currentUID = null;
 
-// --- DOM Elements ---
+// --- DOM Elements (from your script) ---
 const hourlyRateInput = document.getElementById("hourlyRate");
 const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 const settingsStatusSpan = document.getElementById("settingsStatus");
-
 const entryFormCard = document.getElementById("entryFormCard");
 const entryDateInput = document.getElementById("entryDate");
 const startTimeInput = document.getElementById("startTime");
@@ -64,27 +64,24 @@ const updateEntryBtn = document.getElementById("updateEntryBtn");
 const cancelEditBtn = document.getElementById("cancelEditBtn");
 const editEntryIdInput = document.getElementById("editEntryId");
 const entryStatusSpan = document.getElementById("entryStatus");
-
 const entriesTbody = document.getElementById("entriesTbody");
 const noEntriesMessage = document.getElementById("noEntriesMessage");
-
 const filterStartDateInput = document.getElementById("filterStartDate");
 const filterEndDateInput = document.getElementById("filterEndDate");
 const filterBtn = document.getElementById("filterBtn");
 const resetFilterBtn = document.getElementById("resetFilterBtn");
 const totalHoursFilteredSpan = document.getElementById("totalHoursFiltered");
 const totalPayFilteredSpan = document.getElementById("totalPayFiltered");
-
 const exportCsvBtn = document.getElementById("exportCsvBtn");
 const exportStatusSpan = document.getElementById("exportStatus");
 
-// --- State Variables ---
+// --- State Variables (from your script) ---
 let entries = [];
 let settings = { hourlyRate: 20.0 }; // Default rate
 let currentFilter = { startDate: null, endDate: null };
 let statusTimeout = null;
 
-// --- Helper Functions ---
+// --- Helper Functions (from your script) ---
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const [year, month, day] = dateString.split("-").map(Number);
@@ -129,14 +126,16 @@ const calculateDuration = (start, end) => {
   }
 };
 
-// --- Firebase Data Functions (Now use currentUID) ---
+// --- Firebase Data Functions (Adapted for user-specific paths) ---
 const loadSettings = () => {
   if (!currentUID) {
-    console.log("loadSettings: No currentUID, cannot load settings.");
-    // Optionally reset UI if needed, or wait for auth state
-    settings = { hourlyRate: 20.0 }; // Reset local settings object
-    hourlyRateInput.value = settings.hourlyRate.toFixed(2);
-    renderEntries(); // Re-render as rate might affect displayed pay
+    console.log(
+      "loadSettings: No currentUID. Settings will use defaults or be empty."
+    );
+    // Reset local settings and UI for a "no user" or "new user" state
+    settings = { hourlyRate: 20.0 };
+    if (hourlyRateInput) hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+    renderEntries(); // Render, as rate might affect pay display
     return;
   }
   const settingsRef = ref(database, `users/${currentUID}/settings`);
@@ -147,50 +146,70 @@ const loadSettings = () => {
       if (data) {
         settings = data;
         settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
-        hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+        if (hourlyRateInput)
+          hourlyRateInput.value = settings.hourlyRate.toFixed(2);
       } else {
-        // Initialize settings in Firebase for this new anonymous user
-        saveSettingsToFirebase(settings) // Save the default settings object
+        // Settings don't exist for this user, save default settings
+        saveSettingsToFirebase(settings) // Pass the current 'settings' object (which holds defaults)
           .then(() =>
             console.log(
               "Default settings saved to Firebase for user:",
               currentUID
             )
           )
-          .catch((err) => console.error("Error saving default settings:", err));
+          .catch((err) =>
+            console.error("Error saving default settings for new user:", err)
+          );
       }
       renderEntries(); // Re-render if rate affects display
     },
     (error) => {
       console.error("Error loading settings from Firebase:", error);
-      showStatusMessage(
-        settingsStatusSpan,
-        "Error loading settings.",
-        "error",
-        5000
-      );
+      if (settingsStatusSpan)
+        showStatusMessage(
+          settingsStatusSpan,
+          "Error loading settings.",
+          "error",
+          5000
+        );
     }
   );
 };
 
 const saveSettingsToFirebase = async (newSettingsToSave) => {
-  if (!currentUID) return Promise.reject("Not authenticated to save settings.");
+  if (!currentUID) {
+    if (settingsStatusSpan)
+      showStatusMessage(
+        settingsStatusSpan,
+        "Not signed in. Cannot save settings.",
+        "error"
+      );
+    return Promise.reject("Not authenticated to save settings.");
+  }
   const settingsRef = ref(database, `users/${currentUID}/settings`);
   try {
-    await set(settingsRef, newSettingsToSave); // Use the passed settings
-    settings = newSettingsToSave; // Update global settings state
-    return true;
+    await set(settingsRef, newSettingsToSave);
+    settings = newSettingsToSave; // Update global settings state AFTER successful save
+    if (settingsStatusSpan)
+      showStatusMessage(
+        settingsStatusSpan,
+        `Rate saved: $${newSettingsToSave.hourlyRate.toFixed(2)}`
+      );
+    // No need to call renderEntries here unless settings directly change existing entries display
+    // The onValue for settings in loadSettings will trigger re-render if needed by other parts
   } catch (error) {
     console.error("Error saving settings to Firebase:", error);
-    throw error; // Re-throw to be caught by caller if needed
+    if (settingsStatusSpan)
+      showStatusMessage(settingsStatusSpan, "Error saving rate.", "error");
+    throw error;
   }
 };
 
 const loadEntries = () => {
   if (!currentUID) {
-    console.log("loadEntries: No currentUID, cannot load entries.");
-    entries = []; // Clear local entries array
-    renderEntries(); // Update UI
+    console.log("loadEntries: No currentUID. Entries will be empty.");
+    entries = [];
+    renderEntries();
     return;
   }
   const entriesDbRef = ref(database, `users/${currentUID}/entries`);
@@ -207,29 +226,34 @@ const loadEntries = () => {
     },
     (error) => {
       console.error("Error loading entries from Firebase:", error);
-      showStatusMessage(
-        entryStatusSpan,
-        "Error loading entries.",
-        "error",
-        5000
-      );
+      if (entryStatusSpan)
+        showStatusMessage(
+          entryStatusSpan,
+          "Error loading entries.",
+          "error",
+          5000
+        );
     }
   );
 };
 
-// --- Core Logic Functions ---
+// --- Core Logic Functions (renderEntries, clearForm, setupEditForm - from your script) ---
 const renderEntries = () => {
-  if (!entriesTbody) return; // Guard clause if element not found
+  if (!entriesTbody) return;
   entriesTbody.innerHTML = "";
-  let filteredEntries = entries; // Use the global entries array
+  let filteredEntries = entries;
   const rate = parseFloat(settings.hourlyRate) || 0;
 
-  if (currentFilter.startDate) {
+  if (
+    currentFilter.startDate &&
+    filterStartDateInput &&
+    filterStartDateInput.value
+  ) {
     filteredEntries = filteredEntries.filter(
       (e) => e.date >= currentFilter.startDate
     );
   }
-  if (currentFilter.endDate) {
+  if (currentFilter.endDate && filterEndDateInput && filterEndDateInput.value) {
     filteredEntries = filteredEntries.filter(
       (e) => e.date <= currentFilter.endDate
     );
@@ -253,7 +277,6 @@ const renderEntries = () => {
       const pay = duration * rate;
       totalHours += duration;
       totalPay += pay;
-
       const tr = document.createElement("tr");
       tr.dataset.id = entry.id;
       tr.innerHTML = `
@@ -277,7 +300,6 @@ const renderEntries = () => {
       entriesTbody.appendChild(tr);
     });
   }
-
   if (totalHoursFilteredSpan)
     totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
   if (totalPayFilteredSpan)
@@ -311,12 +333,12 @@ const setupEditForm = (entry) => {
   if (entryDateInput) entryDateInput.focus();
 };
 
-// --- Event Handlers ---
+// --- Event Handlers (Adapted for user-specific paths) ---
 const handleSaveSettings = async () => {
   if (!currentUID) {
     showStatusMessage(
       settingsStatusSpan,
-      "Please wait, authenticating...",
+      "Authenticating... Please try again.",
       "error"
     );
     return;
@@ -331,23 +353,16 @@ const handleSaveSettings = async () => {
     if (hourlyRateInput) hourlyRateInput.focus();
     return;
   }
-  const newSettingsToSave = { hourlyRate: rateValue };
-  try {
-    await saveSettingsToFirebase(newSettingsToSave);
-    showStatusMessage(
-      settingsStatusSpan,
-      `Rate saved: $${rateValue.toFixed(2)}`
-    );
-  } catch (error) {
-    showStatusMessage(settingsStatusSpan, "Error saving rate.", "error");
-  }
+  // Pass the new settings directly to the save function
+  await saveSettingsToFirebase({ hourlyRate: rateValue });
+  // The showStatusMessage for success is now inside saveSettingsToFirebase
 };
 
 const handleAddOrUpdateEntry = async (isUpdate = false) => {
   if (!currentUID) {
     showStatusMessage(
       entryStatusSpan,
-      "Please wait, authenticating...",
+      "Authenticating... Please try again.",
       "error"
     );
     return;
@@ -395,15 +410,24 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
     if (isUpdate && entryId) {
       const entryRef = ref(database, `users/${currentUID}/entries/${entryId}`);
       await set(entryRef, entryData);
-      showStatusMessage(entryStatusSpan, "Entry updated.", "success");
+      showStatusMessage(
+        entryStatusSpan,
+        "Entry updated successfully.",
+        "success"
+      );
     } else {
       const entriesListRef = ref(database, `users/${currentUID}/entries`);
       await push(entriesListRef, entryData);
-      showStatusMessage(entryStatusSpan, "Entry added.", "success");
+      showStatusMessage(
+        entryStatusSpan,
+        "Entry added successfully.",
+        "success"
+      );
     }
     clearForm();
+    // onValue in loadEntries will trigger renderEntries, so explicit call might be redundant
   } catch (error) {
-    console.error("Error saving entry:", error);
+    console.error("Error saving entry to Firebase:", error);
     showStatusMessage(entryStatusSpan, "Error saving entry.", "error");
   }
 };
@@ -427,8 +451,9 @@ const handleTableActions = async (event) => {
         await remove(entryRef);
         showStatusMessage(entryStatusSpan, "Entry deleted.", "success");
         if (editEntryIdInput && editEntryIdInput.value === entryId) clearForm();
+        // onValue in loadEntries will trigger renderEntries
       } catch (error) {
-        console.error("Error deleting entry:", error);
+        console.error("Error deleting entry from Firebase:", error);
         showStatusMessage(entryStatusSpan, "Error deleting entry.", "error");
       }
     }
@@ -436,6 +461,7 @@ const handleTableActions = async (event) => {
 };
 
 const handleFilter = () => {
+  // ... (Your existing filter logic - seems fine)
   if (
     filterStartDateInput &&
     filterEndDateInput &&
@@ -461,6 +487,7 @@ const handleFilter = () => {
 };
 
 const handleResetFilter = () => {
+  // ... (Your existing reset filter logic - seems fine)
   if (filterStartDateInput) filterStartDateInput.value = "";
   if (filterEndDateInput) filterEndDateInput.value = "";
   currentFilter.startDate = null;
@@ -470,74 +497,130 @@ const handleResetFilter = () => {
 };
 
 const handleExportCsv = () => {
-  // ... (Your existing CSV export logic should be fine as it operates on the local 'entries' array)
-  // Make sure it uses the global 'entries' and 'settings' variables correctly.
-  let csvEntries = entries; // Use the global 'entries' already filtered by currentUID data path
+  // ... (Your existing CSV export logic - make sure it uses global 'entries' and 'settings')
+  let csvExportEntries = [...entries]; // Use a copy of the global entries
   if (currentFilter.startDate) {
-    csvEntries = csvEntries.filter((e) => e.date >= currentFilter.startDate);
+    csvExportEntries = csvExportEntries.filter(
+      (e) => e.date >= currentFilter.startDate
+    );
   }
   if (currentFilter.endDate) {
-    csvEntries = csvEntries.filter((e) => e.date <= currentFilter.endDate);
+    csvExportEntries = csvExportEntries.filter(
+      (e) => e.date <= currentFilter.endDate
+    );
   }
 
-  if (csvEntries.length === 0) {
-    showStatusMessage(exportStatusSpan, "No entries to export.", "error");
+  if (csvExportEntries.length === 0) {
+    showStatusMessage(
+      exportStatusSpan,
+      "No entries selected to export.",
+      "error"
+    );
     return;
   }
-  csvEntries.sort((a, b) => {
-    /* ... same sort as renderEntries ... */
+  csvExportEntries.sort((a, b) => {
+    const dateComparison = b.date.localeCompare(a.date);
+    if (dateComparison !== 0) return dateComparison;
+    return b.startTime.localeCompare(a.startTime);
   });
   const rate = settings.hourlyRate;
   let csvContent =
     "Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n";
-  csvEntries.forEach((entry) => {
-    /* ... same CSV row generation ... */
+  csvExportEntries.forEach((entry) => {
+    const duration = calculateDuration(entry.startTime, entry.endTime);
+    const pay = duration * rate;
+    const escapedDesc = entry.description
+      ? `"${entry.description.replace(/"/g, '""')}"`
+      : "";
+    csvContent += `${entry.date},${entry.startTime},${
+      entry.endTime
+    },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
   });
   try {
-    /* ... same blob creation and download ... */
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    let filename = "work_hours_export.csv";
+    const today = new Date().toISOString().split("T")[0];
+    const start = currentFilter.startDate || "all";
+    const end = currentFilter.endDate || today;
+    if (start !== "all" || end !== today) {
+      const actualStart = currentFilter.startDate || "beginning";
+      const actualEnd =
+        currentFilter.endDate || new Date().toISOString().split("T")[0];
+      filename = `work_hours_${actualStart}_to_${actualEnd}.csv`;
+    }
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showStatusMessage(exportStatusSpan, "CSV export generated.", "success");
   } catch (e) {
-    /* ... */
+    console.error("CSV Export failed:", e);
+    showStatusMessage(
+      exportStatusSpan,
+      "CSV export failed. See console.",
+      "error"
+    );
   }
 };
 
 // --- Authentication Handling ---
 const handleAuthState = (user) => {
   if (user) {
+    // User is signed in anonymously
     currentUID = user.uid;
     console.log("Authenticated anonymously with UID:", currentUID);
-    // Data loading will now use this UID
-    loadSettings();
-    loadEntries();
+    // Now that we have a UID, load their data
+    loadSettings(); // Will load or initialize settings for this UID
+    loadEntries(); // Will load entries for this UID
   } else {
+    // User is signed out. This might happen if auth token expires and fails to refresh, or some other error.
     currentUID = null;
     console.log(
       "User signed out or no user. Attempting to sign in anonymously."
     );
-    entries = []; // Clear data if user somehow signs out
-    settings = { hourlyRate: 20.0 }; // Reset settings
-    renderEntries(); // Clear UI
+    entries = []; // Clear local data arrays
+    settings = { hourlyRate: 20.0 }; // Reset local settings object
+    renderEntries(); // Clear the table
     clearForm();
     performSignInAnonymously(); // Try to sign in again
   }
 };
 
 const performSignInAnonymously = () => {
-  signInAnonymously(auth).catch((error) => {
-    console.error("Anonymous sign-in error:", error.code, error.message);
-    showStatusMessage(
-      entryStatusSpan,
-      "Cloud connection failed. Refresh to try again.",
-      "error",
-      7000
-    );
-  });
+  signInAnonymously(auth)
+    .then((userCredential) => {
+      // Signed in.. onAuthStateChanged will handle the rest.
+      // The 'userCredential.user' is the same as the 'user' object in onAuthStateChanged.
+      console.log(
+        "Anonymous sign-in successful in performSignInAnonymously. UID will be set by onAuthStateChanged."
+      );
+    })
+    .catch((error) => {
+      console.error(
+        "Anonymous sign-in error in performSignInAnonymously:",
+        error.code,
+        error.message
+      );
+      if (entryStatusSpan)
+        showStatusMessage(
+          entryStatusSpan,
+          "Cloud connection failed. Please refresh.",
+          "error",
+          7000
+        );
+    });
 };
 
 // --- Application Setup ---
 const setupApplication = () => {
-  clearForm();
+  clearForm(); // Initial clear and default date
 
-  // Attach Event Listeners (make sure these elements exist in your HTML)
+  // Attach Event Listeners (Ensure DOM elements are valid before adding listeners)
   if (saveSettingsBtn)
     saveSettingsBtn.addEventListener("click", handleSaveSettings);
   if (addEntryBtn)
@@ -553,16 +636,13 @@ const setupApplication = () => {
     resetFilterBtn.addEventListener("click", handleResetFilter);
   if (exportCsvBtn) exportCsvBtn.addEventListener("click", handleExportCsv);
 
-  // Listen for auth state changes
+  // Listen for auth state changes - This will also trigger initial data load if user is already signed in.
   onAuthStateChanged(auth, handleAuthState);
 
-  // Attempt initial anonymous sign-in
+  // Attempt initial anonymous sign-in if no user is currently signed in by the time onAuthStateChanged first runs.
+  // onAuthStateChanged usually fires immediately with the current auth state (null if not signed in).
   if (!auth.currentUser) {
-    // Check if a user is already signed in from a previous session
     performSignInAnonymously();
-  } else {
-    // If already signed in (e.g. from session persistence)
-    handleAuthState(auth.currentUser);
   }
 };
 
