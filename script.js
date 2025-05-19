@@ -1,8 +1,8 @@
 // script.js (Root Version - Updated for Email/Password Auth)
 
 // --- Firebase SDK Imports ---
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js';
-import { getAnalytics } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-analytics.js'; // Optional
+import { initializeApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics'; // Optional
 import {
   getDatabase,
   ref,
@@ -10,7 +10,7 @@ import {
   onValue,
   push,
   remove,
-} from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-database.js';
+} from 'firebase/database';
 import {
   getAuth,
   onAuthStateChanged,
@@ -18,7 +18,7 @@ import {
   signInWithEmailAndPassword, // For Sign In
   signOut, // For Sign Out
   // signInAnonymously, // We are replacing this
-} from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js';
+} from 'firebase/auth';
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
