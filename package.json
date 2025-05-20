@@ -51,6 +51,7 @@
   },
   "homepage": "https://github.com/polskapeeps/Hours-Tracker#readme",
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "vite": "^6.3.5"
   }
 }
