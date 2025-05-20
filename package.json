@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Tracks work hours",
   "main": "script.js",
+  "type": "module",
   "dependencies": {
     "ansi-regex": "^5.0.1",
     "ansi-styles": "^4.3.0",
@@ -35,7 +36,9 @@
     "yargs-parser": "^21.1.1"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "repository": {
     "type": "git",
@@ -46,5 +49,8 @@
   "bugs": {
     "url": "https://github.com/polskapeeps/Hours-Tracker/issues"
   },
-  "homepage": "https://github.com/polskapeeps/Hours-Tracker#readme"
+  "homepage": "https://github.com/polskapeeps/Hours-Tracker#readme",
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
 }
