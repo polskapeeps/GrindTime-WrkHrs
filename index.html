@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Grind Time</title>
+    <link rel="apple-touch-icon" href="/GrindTime-WrkHrs/assets/apple-touch-icon-CJAvgoyd.png" />
+    <link rel="icon" type="image/png" href="/GrindTime-WrkHrs/assets/icon-master-DKYRZY4e.png" />
+    <script type="module" crossorigin src="/GrindTime-WrkHrs/assets/index-BpYiWSOt.js"></script>
+    <link rel="stylesheet" crossorigin href="/GrindTime-WrkHrs/assets/index-DFyUlwFI.css">
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Daily Grind</h1>
+        <div
+          id="userStatusArea"
+          class="user-status card"
+          style="display: none; margin-bottom: 1rem; padding: 0.75rem"
+        >
+          <p>Logged in as: <strong id="userEmailDisplay"></strong></p>
+          <button id="signOutBtn" class="btn btn-secondary btn-sm">
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      <section id="authSection" class="card">
+        <h2>Sign In / Sign Up</h2>
+        <div class="form-group">
+          <label for="emailInput">Email:</label>
+          <input
+            type="email"
+            id="emailInput"
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="passwordInput">Password:</label>
+          <input
+            type="password"
+            id="passwordInput"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+        <div class="form-actions">
+          <button id="signInBtn" class="btn btn-primary">Sign In</button>
+          <button id="signUpBtn" class="btn btn-success">Sign Up</button>
+        </div>
+        <span id="authStatus" class="status-message" aria-live="polite"></span>
+      </section>
+
+      <div id="mainAppContent" style="display: none">
+        <section id="entryFormCard" class="card">
+          <h2>Log / Edit Time</h2>
+          <input type="hidden" id="editEntryId" />
+
+          <div class="rate-setting-group form-group">
+            <label for="hourlyRate">Rate ($):</label>
+            <input
+              type="number"
+              id="hourlyRate"
+              step="0.01"
+              min="0"
+              placeholder="Rate"
+            />
+            <button id="saveSettingsBtn" class="btn btn-success btn-sm">
+              Save
+            </button>
+            <span
+              id="settingsStatus"
+              class="status-message"
+              aria-live="polite"
+            ></span>
+          </div>
+          <div class="form-group">
+            <label for="entryDate">Date:</label>
+            <input type="date" id="entryDate" required />
+          </div>
+          <div class="time-inputs">
+            <div class="form-group">
+              <label for="startTime">Start Time:</label>
+              <input type="time" id="startTime" required />
+            </div>
+            <div class="form-group">
+              <label for="endTime">End Time:</label>
+              <input type="time" id="endTime" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="description">Job Description (Optional):</label>
+            <input
+              type="text"
+              id="description"
+              placeholder="Task, client, project..."
+            />
+          </div>
+          <div class="form-actions">
+            <button id="addEntryBtn" class="btn btn-primary">Add Entry</button>
+            <button id="updateEntryBtn" class="btn btn-warning" hidden>
+              Update Entry
+            </button>
+            <button id="cancelEditBtn" class="btn btn-secondary" hidden>
+              Cancel Edit
+            </button>
+            <span
+              id="entryStatus"
+              class="status-message"
+              aria-live="polite"
+            ></span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Past Entries</h2>
+          <div class="filter-controls">
+            <div class="form-group">
+              <label for="filterStartDate">Filter From:</label>
+              <input type="date" id="filterStartDate" />
+            </div>
+            <div class="form-group">
+              <label for="filterEndDate">Filter To:</label>
+              <input type="date" id="filterEndDate" />
+            </div>
+            <div class="form-actions filter-buttons">
+              <button id="filterBtn" class="btn btn-primary">
+                Apply Filter
+              </button>
+              <button id="resetFilterBtn" class="btn btn-secondary">
+                Reset Filter
+              </button>
+            </div>
+          </div>
+
+          <div class="totals-display">
+            <h3>Filtered Totals</h3>
+            <p>Total Hours: <strong id="totalHoursFiltered">0.00</strong></p>
+            <p>Total Pay: $<strong id="totalPayFiltered">0.00</strong></p>
+          </div>
+
+          <div class="table-wrapper">
+            <table id="entriesTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Hrs</th>
+                  <th>Desc.</th>
+                  <th>Pay ($)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="entriesTbody"></tbody>
+            </table>
+            <p id="noEntriesMessage" class="text-center muted" hidden>
+              No entries found for the selected period.
+            </p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Export Data</h2>
+          <div class="form-actions">
+            <button id="exportCsvBtn" class="btn btn-primary">
+              Export Filtered to CSV
+            </button>
+            <span
+              id="exportStatus"
+              class="status-message"
+              aria-live="polite"
+            ></span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

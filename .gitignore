@@ -1,0 +1,7 @@
+.vscode/
+.references/
+.docs/
+node_modules/
+
+desktop.ini
+dist/
