@@ -1,4 +1,4 @@
-// script.js (Root Version - Updated for Email/Password Auth)
+// script.js (Root Version - Updated for Email/Password Auth & Week Filters)
 
 // --- Firebase SDK Imports ---
 import { initializeApp } from 'firebase/app';
@@ -17,7 +17,6 @@ import {
   createUserWithEmailAndPassword, // For Sign Up
   signInWithEmailAndPassword, // For Sign In
   signOut, // For Sign Out
-  // signInAnonymously, // We are replacing this
 } from 'firebase/auth';
 
 // --- Firebase Configuration ---
@@ -42,7 +41,6 @@ const auth = getAuth(app);
 let currentUID = null;
 
 // --- DOM Elements ---
-// Auth Elements
 const authSection = document.getElementById('authSection');
 const emailInput = document.getElementById('emailInput');
 const passwordInput = document.getElementById('passwordInput');
@@ -52,15 +50,11 @@ const signOutBtn = document.getElementById('signOutBtn');
 const authStatusSpan = document.getElementById('authStatus');
 const userStatusArea = document.getElementById('userStatusArea');
 const userEmailDisplay = document.getElementById('userEmailDisplay');
-
-// Main App Content Element
 const mainAppContent = document.getElementById('mainAppContent');
-
-// Existing DOM Elements
 const hourlyRateInput = document.getElementById('hourlyRate');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const settingsStatusSpan = document.getElementById('settingsStatus');
-const entryFormCard = document.getElementById('entryFormCard'); // Already have this
+const entryFormCard = document.getElementById('entryFormCard');
 const entryDateInput = document.getElementById('entryDate');
 const startTimeInput = document.getElementById('startTime');
 const endTimeInput = document.getElementById('endTime');
@@ -110,18 +104,23 @@ const clearDataAndUI = () => {
   if (totalHoursFilteredSpan) totalHoursFilteredSpan.textContent = '0.00';
   if (totalPayFilteredSpan) totalPayFilteredSpan.textContent = '0.00';
   clearForm();
+  // Clear filter inputs when signing out
+  if (filterStartDateInput) filterStartDateInput.value = '';
+  if (filterEndDateInput) filterEndDateInput.value = '';
+  currentFilter = { startDate: null, endDate: null };
 };
 
-// --- Helper Functions (formatDate, showStatusMessage, calculateDuration -UNCHANGED) ---
+// --- Helper Functions ---
 const formatDate = (dateString) => {
+  // Original formatDate for display
   if (!dateString) return '';
   const [year, month, day] = dateString.split('-').map(Number);
-  const dateObj = new Date(Date.UTC(year, month - 1, day));
+  const dateObj = new Date(Date.UTC(year, month - 1, day)); // Use UTC to avoid timezone issues with input dates
   return dateObj.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: 'UTC',
+    timeZone: 'UTC', // Specify timezone for consistency
   });
 };
 
@@ -132,7 +131,7 @@ const showStatusMessage = (
   duration = 3000
 ) => {
   if (!element) return;
-  clearTimeout(statusTimeout); // Use the global statusTimeout
+  clearTimeout(statusTimeout);
   element.textContent = message;
   element.className = `status-message ${type} show`;
   statusTimeout = setTimeout(() => {
@@ -143,12 +142,12 @@ const showStatusMessage = (
 const calculateDuration = (start, end) => {
   if (!start || !end) return 0;
   try {
-    const startDate = new Date(`1970-01-01T${start}:00Z`);
+    const startDate = new Date(`1970-01-01T${start}:00Z`); // Assume Z for UTC to avoid DST issues
     const endDate = new Date(`1970-01-01T${end}:00Z`);
     if (isNaN(startDate) || isNaN(endDate)) return 0;
     let diffMs = endDate - startDate;
-    if (diffMs <= 0) {
-      // Assuming overnight if end time is earlier or same on same day
+    if (diffMs < 0) {
+      // Handles overnight shifts correctly
       diffMs += 24 * 60 * 60 * 1000;
     }
     return diffMs / (1000 * 60 * 60);
@@ -158,15 +157,52 @@ const calculateDuration = (start, end) => {
   }
 };
 
-// --- Firebase Data Functions (loadSettings, saveSettingsToFirebase, loadEntries - UNCHANGED but called conditionally) ---
+// Helper function to format date for YYYY-MM-DD input fields
+const formatDateToInput = (date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Function to set filter to current week (Monday - Friday)
+const setDefaultDateFilterToCurrentWeek = () => {
+  if (!filterStartDateInput || !filterEndDateInput) {
+    console.warn(
+      'Filter date input elements not found. Skipping default filter.'
+    );
+    return;
+  }
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 (Sun) to 6 (Sat)
+
+  const monday = new Date(today);
+  // Adjust to get to the previous Monday or current Monday
+  // if today is Sunday (0), subtract 6 days.
+  // if today is Monday (1), subtract 0 days.
+  // if today is Tuesday (2), subtract 1 day. ...
+  // if today is Saturday (6), subtract 5 days.
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+  monday.setDate(today.getDate() + diffToMonday);
+
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4); // Friday is 4 days after Monday
+
+  const mondayStr = formatDateToInput(monday);
+  const fridayStr = formatDateToInput(friday);
+
+  filterStartDateInput.value = mondayStr;
+  filterEndDateInput.value = fridayStr;
+
+  handleFilter(); // This will update currentFilter and call renderEntries
+};
+
+// --- Firebase Data Functions ---
 const loadSettings = () => {
   if (!currentUID) {
-    console.log(
-      'loadSettings: No currentUID. Settings will use defaults or be empty.'
-    );
     settings = { hourlyRate: 20.0 };
     if (hourlyRateInput) hourlyRateInput.value = settings.hourlyRate.toFixed(2);
-    renderEntries();
+    renderEntries(); // Render with default settings
     return;
   }
   const settingsRef = ref(database, `users/${currentUID}/settings`);
@@ -177,16 +213,15 @@ const loadSettings = () => {
       if (data) {
         settings = data;
         settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
-        if (hourlyRateInput)
-          hourlyRateInput.value = settings.hourlyRate.toFixed(2);
       } else {
-        saveSettingsToFirebase({ hourlyRate: settings.hourlyRate }) // Save current (possibly default) rate
-          .then(() =>
-            console.log('Default/Initial settings saved for user:', currentUID)
-          )
-          .catch((err) => console.error('Error saving default settings:', err));
+        settings = { hourlyRate: 20.0 }; // Ensure settings object exists
+        saveSettingsToFirebase(settings).catch((err) =>
+          console.error('Failed to save initial settings:', err)
+        );
       }
-      renderEntries(); // Render entries after settings are loaded/set
+      if (hourlyRateInput)
+        hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+      renderEntries(); // Re-render entries as settings affect pay calculation
     },
     (error) => {
       console.error('Error loading settings from Firebase:', error);
@@ -196,6 +231,10 @@ const loadSettings = () => {
         'error',
         5000
       );
+      settings = { hourlyRate: 20.0 }; // Fallback
+      if (hourlyRateInput)
+        hourlyRateInput.value = settings.hourlyRate.toFixed(2);
+      renderEntries();
     }
   );
 };
@@ -212,11 +251,12 @@ const saveSettingsToFirebase = async (newSettingsToSave) => {
   const settingsRef = ref(database, `users/${currentUID}/settings`);
   try {
     await set(settingsRef, newSettingsToSave);
-    settings = newSettingsToSave;
+    settings = newSettingsToSave; // Update local state
     showStatusMessage(
       settingsStatusSpan,
       `Rate saved: $${newSettingsToSave.hourlyRate.toFixed(2)}`
     );
+    renderEntries(); // Re-render as rate change affects pay
   } catch (error) {
     console.error('Error saving settings to Firebase:', error);
     showStatusMessage(settingsStatusSpan, 'Error saving rate.', 'error');
@@ -226,9 +266,8 @@ const saveSettingsToFirebase = async (newSettingsToSave) => {
 
 const loadEntries = () => {
   if (!currentUID) {
-    console.log('loadEntries: No currentUID. Entries will be empty.');
     entries = [];
-    renderEntries(); // Render even if empty to show "no entries" message
+    renderEntries();
     return;
   }
   const entriesDbRef = ref(database, `users/${currentUID}/entries`);
@@ -239,7 +278,7 @@ const loadEntries = () => {
       entries = data
         ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
         : [];
-      renderEntries(); // Re-render after entries are loaded
+      renderEntries(); // Re-render after entries are loaded or changed
     },
     (error) => {
       console.error('Error loading entries from Firebase:', error);
@@ -249,36 +288,36 @@ const loadEntries = () => {
         'error',
         5000
       );
+      entries = []; // Fallback
+      renderEntries();
     }
   );
 };
 
-// --- Core Logic Functions (renderEntries, clearForm, setupEditForm - UNCHANGED) ---
+// --- Core Logic Functions ---
 const renderEntries = () => {
   if (!entriesTbody) return;
   entriesTbody.innerHTML = '';
   let filteredEntries = entries;
   const rate = parseFloat(settings.hourlyRate) || 0;
 
-  if (
-    currentFilter.startDate &&
-    filterStartDateInput &&
-    filterStartDateInput.value
-  ) {
+  // Apply date filter if active
+  if (currentFilter.startDate) {
     filteredEntries = filteredEntries.filter(
       (e) => e.date >= currentFilter.startDate
     );
   }
-  if (currentFilter.endDate && filterEndDateInput && filterEndDateInput.value) {
+  if (currentFilter.endDate) {
     filteredEntries = filteredEntries.filter(
       (e) => e.date <= currentFilter.endDate
     );
   }
 
+  // Sort entries: newest first by date, then by start time
   filteredEntries.sort((a, b) => {
     const dateComparison = b.date.localeCompare(a.date);
     if (dateComparison !== 0) return dateComparison;
-    return b.startTime.localeCompare(a.startTime); // Sort by start time if dates are same
+    return b.startTime.localeCompare(a.startTime);
   });
 
   let totalHours = 0;
@@ -293,6 +332,7 @@ const renderEntries = () => {
       const pay = duration * rate;
       totalHours += duration;
       totalPay += pay;
+
       const tr = document.createElement('tr');
       tr.dataset.id = entry.id;
       tr.innerHTML = `
@@ -316,6 +356,7 @@ const renderEntries = () => {
       entriesTbody.appendChild(tr);
     });
   }
+
   if (totalHoursFilteredSpan)
     totalHoursFilteredSpan.textContent = totalHours.toFixed(2);
   if (totalPayFilteredSpan)
@@ -325,7 +366,7 @@ const renderEntries = () => {
 const clearForm = () => {
   if (editEntryIdInput) editEntryIdInput.value = '';
   if (entryDateInput)
-    entryDateInput.value = new Date().toISOString().split('T')[0];
+    entryDateInput.value = new Date().toISOString().split('T')[0]; // Default to today
   if (startTimeInput) startTimeInput.value = '';
   if (endTimeInput) endTimeInput.value = '';
   if (descriptionInput) descriptionInput.value = '';
@@ -349,7 +390,7 @@ const setupEditForm = (entry) => {
   if (entryDateInput) entryDateInput.focus();
 };
 
-// --- Event Handlers (handleAddOrUpdateEntry, handleTableActions, etc. - UNCHANGED logic, ensure currentUID check) ---
+// --- Event Handlers ---
 const handleSaveSettings = async () => {
   if (!currentUID) {
     showStatusMessage(
@@ -395,21 +436,13 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
     );
     return;
   }
+
   const duration = calculateDuration(start, end);
-  if (start && end && start > end && duration < 12) {
-    // Check for potential overnight, but still allow if duration is reasonable (e.g., < 12h)
-    if (
-      !confirm(
-        'End time is earlier than start time. Is this an overnight shift?'
-      )
-    ) {
-      showStatusMessage(entryStatusSpan, 'Entry cancelled.', 'error');
-      return;
-    }
-  } else if (start === end) {
+  if (duration <= 0 && !(start > end)) {
+    // Allow overnight (start > end) but not zero/negative duration for same day
     showStatusMessage(
       entryStatusSpan,
-      'Start and End times cannot be the same.',
+      'End time must be after start time for a valid duration.',
       'error'
     );
     return;
@@ -436,7 +469,7 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
       );
     }
     clearForm();
-    renderEntries(); // Re-render after adding/updating
+    // renderEntries() will be called by the onValue listener for entries
   } catch (error) {
     console.error('Error saving entry to Firebase:', error);
     showStatusMessage(entryStatusSpan, 'Error saving entry.', 'error');
@@ -462,7 +495,7 @@ const handleTableActions = async (event) => {
         await remove(entryRef);
         showStatusMessage(entryStatusSpan, 'Entry deleted.', 'success');
         if (editEntryIdInput && editEntryIdInput.value === entryId) clearForm();
-        renderEntries(); // Re-render after deleting
+        // renderEntries() will be called by the onValue listener
       } catch (error) {
         console.error('Error deleting entry from Firebase:', error);
         showStatusMessage(entryStatusSpan, 'Error deleting entry.', 'error');
@@ -472,13 +505,12 @@ const handleTableActions = async (event) => {
 };
 
 const handleFilter = () => {
-  if (
-    filterStartDateInput &&
-    filterEndDateInput &&
-    filterStartDateInput.value &&
-    filterEndDateInput.value &&
-    filterEndDateInput.value < filterStartDateInput.value
-  ) {
+  const startDateValue = filterStartDateInput
+    ? filterStartDateInput.value
+    : null;
+  const endDateValue = filterEndDateInput ? filterEndDateInput.value : null;
+
+  if (startDateValue && endDateValue && endDateValue < startDateValue) {
     showStatusMessage(
       exportStatusSpan,
       "Filter 'To' date cannot be before 'From' date.",
@@ -486,65 +518,36 @@ const handleFilter = () => {
     );
     return;
   }
-  currentFilter.startDate = filterStartDateInput
-    ? filterStartDateInput.value || null
-    : null;
-  currentFilter.endDate = filterEndDateInput
-    ? filterEndDateInput.value || null
-    : null;
-  renderEntries();
+  currentFilter.startDate = startDateValue || null;
+  currentFilter.endDate = endDateValue || null;
+  renderEntries(); // Apply filter and re-render
   if (exportStatusSpan) {
-    // Check if element exists before showing message
-    showStatusMessage(exportStatusSpan, 'Filter applied.', 'success', 1500);
+    // Avoid showing "Filter applied" if it was an error or initial load
+    if (!(startDateValue && endDateValue && endDateValue < startDateValue)) {
+      // Don't show "Filter applied" on initial load with default week.
+      // This message is more for user-initiated filter actions.
+      // We can refine this if a message is desired for the default load.
+    }
   }
 };
 
+// MODIFIED: Reset filter to current week
 const handleResetFilter = () => {
-  if (filterStartDateInput) filterStartDateInput.value = '';
-  if (filterEndDateInput) filterEndDateInput.value = '';
-  currentFilter.startDate = null;
-  currentFilter.endDate = null;
-  renderEntries();
+  setDefaultDateFilterToCurrentWeek(); // This sets dates and calls handleFilter -> renderEntries
   if (exportStatusSpan) {
-    // Check if element exists
-    showStatusMessage(exportStatusSpan, 'Filter reset.', 'success', 1500);
+    showStatusMessage(
+      exportStatusSpan,
+      'Filter reset to current week.',
+      'success',
+      1500
+    );
   }
-};
-
-// --- NEW FUNCTION: Set default date filter to current week (Monday - Friday) ---
-const setDefaultDateFilterToCurrentWeek = () => {
-  const today = new Date();
-  const currentDay = today.getDay(); // 0 (Sun) to 6 (Sat)
-
-  // Calculate Monday of the current week
-  const monday = new Date(today);
-  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay; // If Sunday, go back 6 days, else go back (currentDay - 1) days
-  monday.setDate(today.getDate() + diffToMonday);
-
-  // Calculate Friday of the current week
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-
-  // Format dates as YYYY-MM-DD
-  const formatDateToInput = (date) => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const mondayStr = formatDateToInput(monday);
-  const fridayStr = formatDateToInput(friday);
-
-  if (filterStartDateInput) filterStartDateInput.value = mondayStr;
-  if (filterEndDateInput) filterEndDateInput.value = fridayStr;
-
-  // Apply the filter
-  handleFilter();
 };
 
 const handleExportCsv = () => {
-  let csvExportEntries = [...entries];
+  let csvExportEntries = [...entries]; // Use a copy of the current entries array
+
+  // Apply current filter to the export data
   if (currentFilter.startDate) {
     csvExportEntries = csvExportEntries.filter(
       (e) => e.date >= currentFilter.startDate
@@ -559,18 +562,20 @@ const handleExportCsv = () => {
   if (csvExportEntries.length === 0) {
     showStatusMessage(
       exportStatusSpan,
-      'No entries selected to export.',
+      'No entries in the current filter to export.',
       'error'
     );
     return;
   }
+
+  // Sort for export, consistent with display
   csvExportEntries.sort((a, b) => {
     const dateComparison = b.date.localeCompare(a.date);
     if (dateComparison !== 0) return dateComparison;
     return b.startTime.localeCompare(a.startTime);
   });
 
-  const rate = settings.hourlyRate;
+  const rate = parseFloat(settings.hourlyRate) || 0;
   let csvContent =
     'Date,Start Time,End Time,Duration (Hours),Description,Pay ($)\n';
   csvExportEntries.forEach((entry) => {
@@ -583,27 +588,30 @@ const handleExportCsv = () => {
       entry.endTime
     },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
   });
+
   try {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
+
     let filename = 'work_hours_export.csv';
-    const today = new Date().toISOString().split('T')[0];
-    const start = currentFilter.startDate || 'all';
-    const end = currentFilter.endDate || today;
-    if (start !== 'all' || end !== today) {
-      const actualStart = currentFilter.startDate || 'beginning';
-      const actualEnd =
-        currentFilter.endDate || new Date().toISOString().split('T')[0];
-      filename = `work_hours_${actualStart}_to_${actualEnd}.csv`;
-    }
+    const todayStr = formatDateToInput(new Date());
+    const startStr = currentFilter.startDate
+      ? formatDate(currentFilter.startDate).replace(/[^a-zA-Z0-9]/g, '-')
+      : 'all';
+    const endStr = currentFilter.endDate
+      ? formatDate(currentFilter.endDate).replace(/[^a-zA-Z0-9]/g, '-')
+      : todayStr.replace(/[^a-zA-Z0-9]/g, '-');
+
+    filename = `work_hours_${startStr}_to_${endStr}.csv`;
+
     link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Important to release the object URL
+    URL.revokeObjectURL(url);
     showStatusMessage(exportStatusSpan, 'CSV export generated.', 'success');
   } catch (e) {
     console.error('CSV Export failed:', e);
@@ -615,7 +623,7 @@ const handleExportCsv = () => {
   }
 };
 
-// --- NEW Authentication Event Handlers ---
+// --- Authentication Event Handlers ---
 const handleSignUp = async () => {
   const email = emailInput.value;
   const password = passwordInput.value;
@@ -635,15 +643,15 @@ const handleSignUp = async () => {
     );
     return;
   }
-
   try {
     await createUserWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged will handle UI update, data loading, and default filter
     showStatusMessage(
       authStatusSpan,
       'Sign up successful! You are now logged in.',
       'success'
     );
-    if (passwordInput) passwordInput.value = '';
+    if (passwordInput) passwordInput.value = ''; // Clear password field
   } catch (error) {
     console.error('Sign up error:', error);
     showStatusMessage(
@@ -666,11 +674,11 @@ const handleSignIn = async () => {
     );
     return;
   }
-
   try {
     await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged will handle UI update, data loading, and default filter
     showStatusMessage(authStatusSpan, 'Sign in successful!', 'success');
-    if (passwordInput) passwordInput.value = '';
+    if (passwordInput) passwordInput.value = ''; // Clear password field
   } catch (error) {
     console.error('Sign in error:', error);
     showStatusMessage(
@@ -685,6 +693,7 @@ const handleSignIn = async () => {
 const handleSignOut = async () => {
   try {
     await signOut(auth);
+    // onAuthStateChanged will handle UI changes and data clearing
     showStatusMessage(authStatusSpan, 'You have been signed out.', 'success');
     if (emailInput) emailInput.value = '';
     if (passwordInput) passwordInput.value = '';
@@ -699,16 +708,17 @@ const handleSignOut = async () => {
   }
 };
 
-// --- MODIFIED Authentication State Handling ---
+// --- Authentication State Handling ---
 const handleAuthState = (user) => {
   if (user) {
     currentUID = user.uid;
     console.log('Authenticated with UID:', currentUID, 'Email:', user.email);
     showAppUI(user.email);
     loadSettings(); // Load settings first
-    loadEntries(); // Then load entries
+    loadEntries(); // Then load entries (which will call renderEntries)
 
-    // Set default filter after app UI is shown and basic data might be loading
+    // Set default filter to current week after app UI is shown.
+    // renderEntries will be called again by setDefaultDateFilterToCurrentWeek via handleFilter.
     setDefaultDateFilterToCurrentWeek();
   } else {
     currentUID = null;
@@ -720,9 +730,10 @@ const handleAuthState = (user) => {
 
 // --- Application Setup ---
 const setupApplication = () => {
-  showAuthUI();
-  clearForm();
+  showAuthUI(); // Initially show auth UI
+  clearForm(); // Set default date for entry form
 
+  // Attach Event Listeners
   if (saveSettingsBtn)
     saveSettingsBtn.addEventListener('click', handleSaveSettings);
   if (addEntryBtn)
@@ -738,11 +749,14 @@ const setupApplication = () => {
     resetFilterBtn.addEventListener('click', handleResetFilter);
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', handleExportCsv);
 
+  // Auth Event Listeners
   if (signUpBtn) signUpBtn.addEventListener('click', handleSignUp);
   if (signInBtn) signInBtn.addEventListener('click', handleSignIn);
   if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
 
+  // Listen for auth state changes - This is crucial.
   onAuthStateChanged(auth, handleAuthState);
 };
 
+// --- Initialize App on DOM Ready ---
 document.addEventListener('DOMContentLoaded', setupApplication);
