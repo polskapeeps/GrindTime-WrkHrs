@@ -1,6 +1,6 @@
 {
-  "name": "Grind Time",
-  "short_name": "GrindTime",
+  "name": "Grind Time - Work Hours Tracker",
+  "short_name": "Grind Time",
   "description": "Track your work hours and earnings easily.",
   "start_url": "/GrindTime-WrkHrs/",
   "display": "standalone",
