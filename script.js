@@ -186,7 +186,7 @@ const loadSettings = () => {
           )
           .catch((err) => console.error('Error saving default settings:', err));
       }
-      renderEntries();
+      renderEntries(); // Render entries after settings are loaded/set
     },
     (error) => {
       console.error('Error loading settings from Firebase:', error);
@@ -228,7 +228,7 @@ const loadEntries = () => {
   if (!currentUID) {
     console.log('loadEntries: No currentUID. Entries will be empty.');
     entries = [];
-    renderEntries();
+    renderEntries(); // Render even if empty to show "no entries" message
     return;
   }
   const entriesDbRef = ref(database, `users/${currentUID}/entries`);
@@ -239,7 +239,7 @@ const loadEntries = () => {
       entries = data
         ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
         : [];
-      renderEntries();
+      renderEntries(); // Re-render after entries are loaded
     },
     (error) => {
       console.error('Error loading entries from Firebase:', error);
@@ -414,9 +414,6 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
     );
     return;
   }
-  // Duration check was a bit problematic before, calculateDuration handles overnight by adding 24h.
-  // So a positive duration is generally okay.
-  // Let's refine the "invalid time range" check. It's mostly covered if duration is correctly calculated.
 
   const entryData = { date, startTime: start, endTime: end, description };
 
@@ -439,6 +436,7 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
       );
     }
     clearForm();
+    renderEntries(); // Re-render after adding/updating
   } catch (error) {
     console.error('Error saving entry to Firebase:', error);
     showStatusMessage(entryStatusSpan, 'Error saving entry.', 'error');
@@ -446,7 +444,7 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
 };
 
 const handleTableActions = async (event) => {
-  if (!currentUID) return; // Should not happen if UI is managed correctly
+  if (!currentUID) return;
   const target = event.target;
   const entryId = target.dataset.id;
   if (!entryId) return;
@@ -464,6 +462,7 @@ const handleTableActions = async (event) => {
         await remove(entryRef);
         showStatusMessage(entryStatusSpan, 'Entry deleted.', 'success');
         if (editEntryIdInput && editEntryIdInput.value === entryId) clearForm();
+        renderEntries(); // Re-render after deleting
       } catch (error) {
         console.error('Error deleting entry from Firebase:', error);
         showStatusMessage(entryStatusSpan, 'Error deleting entry.', 'error');
@@ -494,7 +493,10 @@ const handleFilter = () => {
     ? filterEndDateInput.value || null
     : null;
   renderEntries();
-  showStatusMessage(exportStatusSpan, 'Filter applied.', 'success', 1500);
+  if (exportStatusSpan) {
+    // Check if element exists before showing message
+    showStatusMessage(exportStatusSpan, 'Filter applied.', 'success', 1500);
+  }
 };
 
 const handleResetFilter = () => {
@@ -503,7 +505,42 @@ const handleResetFilter = () => {
   currentFilter.startDate = null;
   currentFilter.endDate = null;
   renderEntries();
-  showStatusMessage(exportStatusSpan, 'Filter reset.', 'success', 1500);
+  if (exportStatusSpan) {
+    // Check if element exists
+    showStatusMessage(exportStatusSpan, 'Filter reset.', 'success', 1500);
+  }
+};
+
+// --- NEW FUNCTION: Set default date filter to current week (Monday - Friday) ---
+const setDefaultDateFilterToCurrentWeek = () => {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 (Sun) to 6 (Sat)
+
+  // Calculate Monday of the current week
+  const monday = new Date(today);
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay; // If Sunday, go back 6 days, else go back (currentDay - 1) days
+  monday.setDate(today.getDate() + diffToMonday);
+
+  // Calculate Friday of the current week
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  // Format dates as YYYY-MM-DD
+  const formatDateToInput = (date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const mondayStr = formatDateToInput(monday);
+  const fridayStr = formatDateToInput(friday);
+
+  if (filterStartDateInput) filterStartDateInput.value = mondayStr;
+  if (filterEndDateInput) filterEndDateInput.value = fridayStr;
+
+  // Apply the filter
+  handleFilter();
 };
 
 const handleExportCsv = () => {
@@ -601,13 +638,11 @@ const handleSignUp = async () => {
 
   try {
     await createUserWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle the rest (UI update, data loading)
     showStatusMessage(
       authStatusSpan,
       'Sign up successful! You are now logged in.',
       'success'
     );
-    // Clear password field after successful signup attempt
     if (passwordInput) passwordInput.value = '';
   } catch (error) {
     console.error('Sign up error:', error);
@@ -634,9 +669,7 @@ const handleSignIn = async () => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle the rest
     showStatusMessage(authStatusSpan, 'Sign in successful!', 'success');
-    // Clear password field after successful sign in attempt
     if (passwordInput) passwordInput.value = '';
   } catch (error) {
     console.error('Sign in error:', error);
@@ -652,9 +685,7 @@ const handleSignIn = async () => {
 const handleSignOut = async () => {
   try {
     await signOut(auth);
-    // onAuthStateChanged will handle UI changes and data clearing
     showStatusMessage(authStatusSpan, 'You have been signed out.', 'success');
-    // Clear email/password fields on sign out
     if (emailInput) emailInput.value = '';
     if (passwordInput) passwordInput.value = '';
   } catch (error) {
@@ -671,28 +702,27 @@ const handleSignOut = async () => {
 // --- MODIFIED Authentication State Handling ---
 const handleAuthState = (user) => {
   if (user) {
-    // User is signed in (no longer anonymous by default here)
     currentUID = user.uid;
     console.log('Authenticated with UID:', currentUID, 'Email:', user.email);
-    showAppUI(user.email); // Show main app, hide auth form, display user email
-    loadSettings();
-    loadEntries();
+    showAppUI(user.email);
+    loadSettings(); // Load settings first
+    loadEntries(); // Then load entries
+
+    // Set default filter after app UI is shown and basic data might be loading
+    setDefaultDateFilterToCurrentWeek();
   } else {
-    // User is signed out
     currentUID = null;
     console.log('User signed out or no user.');
-    clearDataAndUI(); // Clear any existing user data from the UI
-    showAuthUI(); // Show auth form, hide main app
+    clearDataAndUI();
+    showAuthUI();
   }
 };
 
 // --- Application Setup ---
 const setupApplication = () => {
-  // Initial UI state: show auth, hide app (will be updated by onAuthStateChanged)
   showAuthUI();
-  clearForm(); // Initial clear and default date for the entry form
+  clearForm();
 
-  // Attach Event Listeners
   if (saveSettingsBtn)
     saveSettingsBtn.addEventListener('click', handleSaveSettings);
   if (addEntryBtn)
@@ -708,14 +738,11 @@ const setupApplication = () => {
     resetFilterBtn.addEventListener('click', handleResetFilter);
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', handleExportCsv);
 
-  // Auth Event Listeners
   if (signUpBtn) signUpBtn.addEventListener('click', handleSignUp);
   if (signInBtn) signInBtn.addEventListener('click', handleSignIn);
   if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
 
-  // Listen for auth state changes - This is crucial.
   onAuthStateChanged(auth, handleAuthState);
 };
 
-// --- Initialize App on DOM Ready ---
 document.addEventListener('DOMContentLoaded', setupApplication);
