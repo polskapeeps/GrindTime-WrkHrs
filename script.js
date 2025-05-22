@@ -185,14 +185,14 @@ const setDefaultDateFilterToCurrentWeek = () => {
   const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
   monday.setDate(today.getDate() + diffToMonday);
 
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4); // Friday is 4 days after Monday
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6); // Friday is 4 days after Monday
 
   const mondayStr = formatDateToInput(monday);
-  const fridayStr = formatDateToInput(friday);
+  const sundayStr = formatDateToInput(sunday);
 
   filterStartDateInput.value = mondayStr;
-  filterEndDateInput.value = fridayStr;
+  filterEndDateInput.value = sundayStr;
 
   handleFilter(); // This will update currentFilter and call renderEntries
 };
