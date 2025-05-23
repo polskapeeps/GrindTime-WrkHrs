@@ -2,7 +2,6 @@
 .references/
 .docs/
 node_modules/
-.vite/
 
 desktop.ini
 dist/
