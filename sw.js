@@ -1,13 +1,13 @@
 // sw.js - Service Worker for Grind Time PWA
 const CACHE_NAME = 'grind-time-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/script.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  './',
+  './index.html',
+  './styles.css',
+  './script.js',
+  './manifest.json',
+  './assets/icons/android-chrome-192x192.png',
+  './assets/icons/android-chrome-512x512.png',
 ];
 
 // Install event - cache resources
