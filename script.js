@@ -765,7 +765,7 @@ document.addEventListener('DOMContentLoaded', setupApplication);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('./sw.js')
+      .register('/GrindTime-WrkHrs/sw.js')
       .then((registration) => {
         console.log('SW registered: ', registration);
       })
