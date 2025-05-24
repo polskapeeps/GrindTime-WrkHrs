@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: '/GrindTime-WrkHrs/',
   build: {
-    assetsDir: '_app_assets',
+    assetsDir: 'assets',
     rollupOptions: {
       input: {
         main: './index.html',
