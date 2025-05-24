@@ -9,7 +9,28 @@ export default defineConfig({
       input: {
         main: './index.html',
       },
+      output: {
+        // Keep consistent naming for easier caching
+        entryFileNames: '_app_assets/[name]-[hash].js',
+        chunkFileNames: '_app_assets/[name]-[hash].js',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.css')) {
+            return '_app_assets/[name]-[hash].css';
+          }
+          // Keep original names for PWA assets
+          if (assetInfo.name?.match(/\.(png|jpg|jpeg|svg|ico|webp)$/)) {
+            return '_app_assets/[name][extname]';
+          }
+          return '_app_assets/[name]-[hash][extname]';
+        },
+      },
     },
+    // Copy PWA files to root of dist
+    copyPublicDir: true,
   },
   publicDir: 'public',
+  server: {
+    port: 5173,
+    open: true,
+  },
 });
