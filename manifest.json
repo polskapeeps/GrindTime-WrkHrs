@@ -6,7 +6,6 @@
   "scope": "/GrindTime-WrkHrs/",
   "display": "standalone",
   "background_color": "#1a1a1a",
-  "theme_color": "#007bff",
   "orientation": "portrait-primary",
   "categories": ["productivity", "business", "utilities"],
   "lang": "en",
