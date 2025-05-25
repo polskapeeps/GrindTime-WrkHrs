@@ -1,9 +1,9 @@
-// sw.js - Service Worker for Grind Time PWA
+// sw.js - Fixed Service Worker for Grind Time PWA
 const CACHE_NAME = 'grind-time-v1';
 const BASE_PATH = '/GrindTime-WrkHrs/';
 
-// Core app files to cache
-const STATIC_CACHE0 = [BASE_PATH, BASE_PATH + 'index.html'];
+// Core app files to cache (fixed variable name)
+const STATIC_CACHE = [BASE_PATH, BASE_PATH + 'index.html'];
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
@@ -12,7 +12,7 @@ self.addEventListener('install', (event) => {
       console.log('Opened cache');
 
       // Cache static files first
-      await cache.addAll(STATIC_CACHE0);
+      await cache.addAll(STATIC_CACHE);
 
       // Try to fetch and cache the index.html to discover asset URLs
       try {
@@ -27,8 +27,12 @@ self.addEventListener('install', (event) => {
         if (cssMatches) {
           cssMatches.forEach((match) => {
             const url = match.match(/href="([^"]*)"/)[1];
-            if (url.startsWith('/GrindTime-WrkHrs/')) {
-              assetUrls.push(url);
+            if (url.startsWith('/GrindTime-WrkHrs/') || url.startsWith('./')) {
+              // Convert relative to absolute
+              const absoluteUrl = url.startsWith('./')
+                ? BASE_PATH + url.slice(2)
+                : url;
+              assetUrls.push(absoluteUrl);
             }
           });
         }
@@ -38,23 +42,29 @@ self.addEventListener('install', (event) => {
         if (jsMatches) {
           jsMatches.forEach((match) => {
             const url = match.match(/src="([^"]*)"/)[1];
-            if (url.startsWith('/GrindTime-WrkHrs/')) {
-              assetUrls.push(url);
+            if (url.startsWith('/GrindTime-WrkHrs/') || url.startsWith('./')) {
+              const absoluteUrl = url.startsWith('./')
+                ? BASE_PATH + url.slice(2)
+                : url;
+              assetUrls.push(absoluteUrl);
             }
           });
         }
 
-        // Match manifest and icons
+        // Match manifest
         const manifestMatch = html.match(/href="([^"]*manifest[^"]*)"/);
         if (manifestMatch) {
-          assetUrls.push(manifestMatch[1]);
+          const url = manifestMatch[1];
+          const absoluteUrl = url.startsWith('/') ? url : BASE_PATH + url;
+          assetUrls.push(absoluteUrl);
         }
 
-        const iconMatches = html.match(/href="([^"]*apple-touch-icon[^"]*)"/);
+        // Match icons
+        const iconMatches = html.match(/href="([^"]*\.(png|ico))"/g);
         if (iconMatches) {
           iconMatches.forEach((match) => {
             const url = match.match(/href="([^"]*)"/)[1];
-            if (url.startsWith('/GrindTime-WrkHrs/')) {
+            if (url.startsWith('/')) {
               assetUrls.push(url);
             }
           });
@@ -63,7 +73,19 @@ self.addEventListener('install', (event) => {
         // Cache discovered assets
         if (assetUrls.length > 0) {
           console.log('Caching discovered assets:', assetUrls);
-          await cache.addAll(assetUrls);
+          try {
+            await cache.addAll(assetUrls);
+          } catch (error) {
+            console.warn('Some assets failed to cache:', error);
+            // Try to cache them individually
+            for (const url of assetUrls) {
+              try {
+                await cache.add(url);
+              } catch (e) {
+                console.warn('Failed to cache:', url, e);
+              }
+            }
+          }
         }
       } catch (error) {
         console.warn('Could not discover assets from index.html:', error);
@@ -115,7 +137,7 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         // If both cache and network fail, return offline page for navigation
         if (event.request.destination === 'document') {
-          return caches.match(event.request);
+          return caches.match(BASE_PATH + 'index.html');
         }
       })
   );
