@@ -4,29 +4,33 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: '/GrindTime-WrkHrs/',
   build: {
+    outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
-      input: {
-        main: './index.html',
-      },
+      // Automatically detect entry points
+      input: './index.html',
       output: {
-        // Keep consistent naming for easier caching
-        entryFileNames: '_app_assets/[name]-[hash].js',
-        chunkFileNames: '_app_assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.css')) {
-            return '_app_assets/[name]-[hash].css';
+          const info = assetInfo.name.split('.');
+          const extType = info[info.length - 1];
+
+          // CSS files
+          if (extType === 'css') {
+            return 'assets/css/[name]-[hash].[ext]';
           }
-          // Keep original names for PWA assets
-          if (assetInfo.name?.match(/\.(png|jpg|jpeg|svg|ico|webp)$/)) {
-            return '_app_assets/[name][extname]';
+
+          // Images and icons (keep original names for PWA)
+          if (['png', 'jpg', 'jpeg', 'svg', 'ico', 'webp'].includes(extType)) {
+            return 'assets/icons/[name].[ext]';
           }
-          return '_app_assets/[name]-[hash][extname]';
+
+          // Other assets
+          return 'assets/[name]-[hash].[ext]';
         },
       },
     },
-    // Copy PWA files to root of dist
-    copyPublicDir: true,
   },
   publicDir: 'public',
   server: {
