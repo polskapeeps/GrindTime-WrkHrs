@@ -90,7 +90,7 @@ const showAuthUI = () => {
 
 const showAppUI = (userEmail) => {
   if (authSection) authSection.style.display = 'none';
-  if (mainAppContent) mainAppContent.style.display = 'block';
+  if (mainAppContent) mainAppContent.style.display = 'flex';
   if (userStatusArea) userStatusArea.style.display = 'block';
   if (userEmailDisplay && userEmail) userEmailDisplay.textContent = userEmail;
 };
