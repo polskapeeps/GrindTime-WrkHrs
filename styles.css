@@ -99,6 +99,12 @@ a:hover {
   margin-bottom: calc(var(--spacing-unit) * 0.5);
 }
 
+#mainAppContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-unit);
+}
+
 .card {
   background-color: var(--secondary-bg);
   border-radius: var(--border-radius);
