@@ -1,67 +1,62 @@
-# Grind Time (Work Hours)
+# Daily Grind - Personal Hours Tracker
 
-Grind Time is a straightforward web app to help you easily track your work hours, see your earnings, and export your data. Everything you log is saved securely to your personal cloud account, so you can access it wherever you are.
+Just a simple web app I built to track my work hours and calculate earnings. Got tired of using spreadsheets and wanted something that syncs across my devices.
 
-## Features
+## What it does
 
-- **Time Entry**: Quickly log your work sessions with date, start, and end times.
-- **Earnings Calculation**: Automatically calculates your pay based on your set hourly rate.
-- **Secure Cloud Sync**: Your entries and settings are saved to your personal Firebase account, accessible only by you after logging in.
-- **Filterable History**: View and filter your time entries by date range to find what you need.
-- **Data Export**: Generate and download your work logs as a CSV file.
-- **Responsive Design**: Works well on both desktop and mobile browsers.
-- **Overnight Shift Support**: Correctly handles work shifts that span past midnight.
+- **Track work sessions** - Log your start/end times, add notes about what you worked on
+- **Calculate pay automatically** - Set your hourly rate and it does the math for you
+- **Week view by default** - Opens showing current week (Monday-Sunday) so you can see your weekly progress
+- **Filter by date range** - Look at specific time periods or export just what you need
+- **Export to CSV** - Download your hours for invoicing, taxes, whatever
+- **Works offline** - Built as a PWA so it loads even without internet
+- **Syncs everywhere** - Sign in with email/password and your data follows you to any device
+- **Dark theme** - Easy on the eyes during those late work sessions
 
-## How to Use (for the Deployed App)
+## How to use it
 
-1.  **Sign Up / Sign In**: First, create an account using your email and password, or sign in if you already have one. This keeps your data private and secure.
-2.  **Set Your Hourly Rate**: Once logged in, head to the settings area to enter your hourly rate and click "Save." This rate is stored with your account and used for pay calculations.
-3.  **Log Your Hours**: Use the main form to add new time entries. You'll need the date, start time, end time, and you can add an optional description for the task.
-4.  **Review & Filter**: Your past entries are displayed in a table, sorted by date. You can use the filter controls to narrow down entries to a specific period.
-5.  **Export Data**: Need your records? You can export the filtered list of your work hours to a CSV file.
+1. **Sign up** with your email and a password (or sign in if you already have an account)
+2. **Set your hourly rate** in the settings up top - this gets saved to your account
+3. **Add time entries** - pick the date, start time, end time, and optionally describe what you worked on
+4. **View your hours** - by default it shows the current week, but you can filter to any date range
+5. **Export when needed** - hit the export button to download a CSV of your filtered hours
 
-## Running Locally (for Developers)
+The app handles overnight shifts correctly (like 11 PM to 3 AM) and keeps everything synced in real-time through Firebase.
 
-If you want to run the app locally or contribute:
+## Running it locally
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone [https://github.com/polskapeeps/Hours-Tracker.git](https://github.com/polskapeeps/Hours-Tracker.git)
-    cd Hours-Tracker
-    ```
-2.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-3.  **Run the Development Server**:
+If you want to tinker with the code:
 
-    ```bash
-    npm run dev
-    ```
+```bash
+git clone https://github.com/polskapeeps/Hours-Tracker.git
+cd Hours-Tracker
+npm install
+npm run dev
+```
 
-    This will start the Vite development server, and the app will typically be available at `http://localhost:5173` in your browser. The page will automatically reload if you make changes to the code.
+It'll start up on `http://localhost:5173`. The app uses Vite for the build system and Firebase for the backend.
 
-4.  **Build for Production**:
-    To create an optimized static build (e.g., for deploying to a web host):
-    ```bash
-    npm run build
-    ```
-    The output files will be in the `dist` directory.
+## Tech stuff
 
-## Data Storage & Privacy
+Built with vanilla JavaScript, HTML, and CSS - no fancy frameworks. Uses:
 
-Your work hour entries and hourly rate are securely stored online using Firebase Realtime Database. This data is linked directly to the email and password you use to sign in, ensuring that only you can access your information after authenticating.
+- **Firebase** for user auth and real-time database
+- **Vite** for development and building
+- **Service Worker** for offline functionality and PWA features
+- **GitHub Pages** for hosting
 
-## Contributing
+Everything is stored in your personal Firebase account, so only you can see your data after logging in.
 
-Contributions are welcome! If you have ideas for improvements or find any bugs, please feel free to open an issue or submit a pull request.
+## Live version
+
+The app is live at: https://polskapeeps.github.io/GrindTime-WrkHrs/
+
+You can install it to your phone's home screen - it works just like a native app.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](license.md) file for details.
+MIT License - use it however you want. See the LICENSE file for details.
 
-## Technology
+---
 
-- Vanilla JavaScript, HTML, and CSS for the core application.
-- Firebase (Authentication and Realtime Database) for user accounts and data storage.
-- Vite for the development environment and build process.
+_Just a weekend project that turned out pretty useful. Feel free to fork it or suggest improvements!_
