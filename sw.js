@@ -1,5 +1,5 @@
 // sw.js - Fixed Service Worker for Grind Time PWA
-const CACHE_NAME = 'grind-time-v1';
+const CACHE_NAME = 'grind-time-v1.3';
 const BASE_PATH = '/GrindTime-WrkHrs/';
 
 // Core app files to cache (fixed variable name)
