@@ -74,8 +74,9 @@ const totalHoursFilteredSpan = document.getElementById('totalHoursFiltered');
 const totalPayFilteredSpan = document.getElementById('totalPayFiltered');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const exportStatusSpan = document.getElementById('exportStatus');
-const prevWeekBtn = document.getElementById('prevWeekBtn'); // Added
-const nextWeekBtn = document.getElementById('nextWeekBtn'); // Added
+const filterStatusSpan = document.getElementById('filterStatus');
+const prevWeekBtn = document.getElementById('prevWeekBtn');
+const nextWeekBtn = document.getElementById('nextWeekBtn');
 
 // --- State Variables ---
 let entries = [];
@@ -527,14 +528,14 @@ const handleFilter = () => {
 const handleResetFilter = () => {
   setDefaultDateFilterToCurrentWeek();
   showStatusMessage(
-    exportStatusSpan,
+    filterStatusSpan,
     'Filter reset to current week.',
     'success',
     1500
   );
 };
 
-// --- Week Navigation Function (NEW) ---
+// --- Week Navigation ---
 const navigateWeeks = (direction) => {
   if (!filterStartDateInput || !filterEndDateInput) {
     console.warn('Filter date inputs not found for week navigation.');
@@ -597,7 +598,7 @@ const navigateWeeks = (direction) => {
   handleFilter(); // Apply the new filter and re-render
 
   showStatusMessage(
-    exportStatusSpan,
+    filterStatusSpan,
     `Filter set to ${direction === 'prev' ? 'previous' : 'next'} week.`,
     'success',
     1500
