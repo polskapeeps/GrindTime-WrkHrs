@@ -315,9 +315,9 @@ const renderEntries = () => {
 
   // Sort entries: newest first by date, then by start time
   filteredEntries.sort((a, b) => {
-    const dateComparison = b.date.localeCompare(a.date);
+    const dateComparison = a.date.localeCompare(b.date);
     if (dateComparison !== 0) return dateComparison;
-    return b.startTime.localeCompare(a.startTime);
+    return a.startTime.localeCompare(b.startTime);
   });
 
   let totalHours = 0;
