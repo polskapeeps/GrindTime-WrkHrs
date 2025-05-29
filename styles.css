@@ -15,6 +15,7 @@
   --accent-warning: #40916c; /* Yellow */
   --accent-text-light: #ffffff; /* Text on colored buttons */
   --accent-text-dark: #212529; /* Text on light/warning buttons */
+  --accent-info: #3d554a86; /* Light blue */
 
   --success-bg-subtle: rgba(40, 167, 69, 0.15);
   --success-text-subtle: #a3d9b1;
@@ -252,7 +253,13 @@ input::placeholder {
   background-color: var(--accent-warning);
   color: var(--accent-text-dark);
 }
-
+.btn-info {
+  background-color: var(--accent-info);
+  color: var(--accent-text-dark);
+}
+.btn-info:hover {
+  background-color: #17a2b8; /* A darker shade for hover */
+}
 /* ---=== Status Messages ===--- */
 .status-message {
   padding: calc(var(--spacing-unit) * 0.3) calc(var(--spacing-unit) * 0.6);
