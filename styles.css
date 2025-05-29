@@ -291,9 +291,17 @@ rate-setting-group .status-message {
 }
 .status-message.inline {
   padding: calc(var(--spacing-unit) * 0.2) calc(var(--spacing-unit) * 0.4);
-  font-size: 0.75em;
+  font-size: 0.75rem;
   margin-left: calc(var(--spacing-unit) * 0.3);
   vertical-align: middle;
+}
+h2 .status-message.inline {
+  padding: calc(var(--spacing-unit) * 0.1) calc(var(--spacing-unit) * 0.2);
+  font-size: 0.6rem;
+  margin-left: calc(var(--spacing-unit) * 0.2);
+  vertical-align: middle;
+  border-radius: 3px;
+  display: inline-block;
 }
 
 /* ---=== Entries Table ===--- */
