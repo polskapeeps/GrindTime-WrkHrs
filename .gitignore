@@ -1,8 +1,10 @@
 .vscode/
-.references/
+.devrefs/
 .docs/
 node_modules/
 .vite/
+.dev/
+
 
 desktop.ini
 dist/
