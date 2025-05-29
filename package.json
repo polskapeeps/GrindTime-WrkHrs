@@ -1,6 +1,6 @@
 {
-  "name": "hours-tracker",
-  "version": "1.0.0",
+  "name": "grind-time",
+  "version": "1.3.0",
   "description": "Tracks work hours",
   "main": "script.js",
   "type": "module",
@@ -43,14 +43,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/polskapeeps/Hours-Tracker.git"
+    "url": "git+https://github.com/polskapeeps/GrindTime-WrkHrs.git"
   },
   "author": "polskapeeps",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/polskapeeps/Hours-Tracker/issues"
+    "url": "https://github.com/polskapeeps/GrindTime-WrkHrs/issues"
   },
-  "homepage": "https://github.com/polskapeeps/Hours-Tracker#readme",
+  "homepage": "https://github.com/polskapeeps/GrindTime-WrkHrs/#readme",
   "devDependencies": {
     "gh-pages": "^6.3.0",
     "vite": "^6.3.5"
