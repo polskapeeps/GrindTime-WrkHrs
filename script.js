@@ -165,7 +165,7 @@ const formatDateToInput = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Function to set filter to current week (Monday - Friday)
+// Function to set filter to current week (Monday - Sunday)
 const setDefaultDateFilterToCurrentWeek = () => {
   if (!filterStartDateInput || !filterEndDateInput) {
     console.warn(
@@ -186,7 +186,7 @@ const setDefaultDateFilterToCurrentWeek = () => {
   monday.setDate(today.getDate() + diffToMonday);
 
   const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6); // Friday is 4 days after Monday
+  sunday.setDate(monday.getDate() + 6); // Sunday is 6 days after Monday
 
   const mondayStr = formatDateToInput(monday);
   const sundayStr = formatDateToInput(sunday);
@@ -754,6 +754,26 @@ const setupApplication = () => {
   if (signInBtn) signInBtn.addEventListener('click', handleSignIn);
   if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
 
+  // Add event listener for 'Enter' key on password input
+  if (passwordInput) {
+    passwordInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent default form submission if any
+        handleSignIn();
+      }
+    });
+  }
+
+  // Add event listener for 'Enter' key on email input to move to password
+  if (emailInput) {
+    emailInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault(); // Prevent default form submission
+        if (passwordInput) passwordInput.focus(); // Move focus to password input
+      }
+    });
+  }
+
   // Listen for auth state changes - This is crucial.
   onAuthStateChanged(auth, handleAuthState);
 };
@@ -765,7 +785,7 @@ document.addEventListener('DOMContentLoaded', setupApplication);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/GrindTime-WrkHrs/sw.js')
+      .register('/GrindTime-WrkHrs/sw.js') // MODIFIED: Make sure this path is correct if your sw.js is in a subfolder like 'public'
       .then((registration) => {
         console.log('SW registered: ', registration);
       })
