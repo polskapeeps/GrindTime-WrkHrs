@@ -289,6 +289,12 @@ rate-setting-group .status-message {
   color: var(--error-text-subtle);
   border-color: var(--error-border-subtle);
 }
+.status-message.inline {
+  padding: calc(var(--spacing-unit) * 0.2) calc(var(--spacing-unit) * 0.4);
+  font-size: 0.75em;
+  margin-left: calc(var(--spacing-unit) * 0.3);
+  vertical-align: middle;
+}
 
 /* ---=== Entries Table ===--- */
 .filter-controls {
