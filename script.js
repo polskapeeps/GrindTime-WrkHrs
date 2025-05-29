@@ -74,6 +74,8 @@ const totalHoursFilteredSpan = document.getElementById('totalHoursFiltered');
 const totalPayFilteredSpan = document.getElementById('totalPayFiltered');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const exportStatusSpan = document.getElementById('exportStatus');
+const prevWeekBtn = document.getElementById('prevWeekBtn'); // Added
+const nextWeekBtn = document.getElementById('nextWeekBtn'); // Added
 
 // --- State Variables ---
 let entries = [];
@@ -104,7 +106,6 @@ const clearDataAndUI = () => {
   if (totalHoursFilteredSpan) totalHoursFilteredSpan.textContent = '0.00';
   if (totalPayFilteredSpan) totalPayFilteredSpan.textContent = '0.00';
   clearForm();
-  // Clear filter inputs when signing out
   if (filterStartDateInput) filterStartDateInput.value = '';
   if (filterEndDateInput) filterEndDateInput.value = '';
   currentFilter = { startDate: null, endDate: null };
@@ -112,15 +113,14 @@ const clearDataAndUI = () => {
 
 // --- Helper Functions ---
 const formatDate = (dateString) => {
-  // Original formatDate for display
   if (!dateString) return '';
   const [year, month, day] = dateString.split('-').map(Number);
-  const dateObj = new Date(Date.UTC(year, month - 1, day)); // Use UTC to avoid timezone issues with input dates
+  const dateObj = new Date(Date.UTC(year, month - 1, day));
   return dateObj.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: 'UTC', // Specify timezone for consistency
+    timeZone: 'UTC',
   });
 };
 
@@ -142,12 +142,11 @@ const showStatusMessage = (
 const calculateDuration = (start, end) => {
   if (!start || !end) return 0;
   try {
-    const startDate = new Date(`1970-01-01T${start}:00Z`); // Assume Z for UTC to avoid DST issues
+    const startDate = new Date(`1970-01-01T${start}:00Z`);
     const endDate = new Date(`1970-01-01T${end}:00Z`);
     if (isNaN(startDate) || isNaN(endDate)) return 0;
     let diffMs = endDate - startDate;
     if (diffMs < 0) {
-      // Handles overnight shifts correctly
       diffMs += 24 * 60 * 60 * 1000;
     }
     return diffMs / (1000 * 60 * 60);
@@ -157,15 +156,23 @@ const calculateDuration = (start, end) => {
   }
 };
 
-// Helper function to format date for YYYY-MM-DD input fields
 const formatDateToInput = (date) => {
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
+  // Ensure date is a Date object before calling getFullYear etc.
+  if (!(date instanceof Date) || isNaN(date)) {
+    console.error('formatDateToInput received an invalid date:', date);
+    // Fallback to today or an empty string, depending on desired behavior
+    const today = new Date();
+    const year = today.getUTCFullYear();
+    const month = (today.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = today.getUTCDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  const year = date.getUTCFullYear();
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = date.getUTCDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
-// Function to set filter to current week (Monday - Sunday)
 const setDefaultDateFilterToCurrentWeek = () => {
   if (!filterStartDateInput || !filterEndDateInput) {
     console.warn(
@@ -173,28 +180,24 @@ const setDefaultDateFilterToCurrentWeek = () => {
     );
     return;
   }
-  const today = new Date();
-  const currentDay = today.getDay(); // 0 (Sun) to 6 (Sat)
+  const today = new Date(); // Use local time 'today' as the base
+  const currentDay = today.getUTCDay(); // 0 (Sun) to 6 (Sat) -  Using getUTCDay for consistency in calculation
 
-  const monday = new Date(today);
-  // Adjust to get to the previous Monday or current Monday
-  // if today is Sunday (0), subtract 6 days.
-  // if today is Monday (1), subtract 0 days.
-  // if today is Tuesday (2), subtract 1 day. ...
-  // if today is Saturday (6), subtract 5 days.
+  // Create a new Date object for Monday based on UTC components of 'today'
+  const monday = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  );
   const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-  monday.setDate(today.getDate() + diffToMonday);
+  monday.setUTCDate(monday.getUTCDate() + diffToMonday);
 
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6); // Sunday is 6 days after Monday
+  const sunday = new Date(
+    Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate())
+  );
+  sunday.setUTCDate(sunday.getUTCDate() + 6);
 
-  const mondayStr = formatDateToInput(monday);
-  const sundayStr = formatDateToInput(sunday);
-
-  filterStartDateInput.value = mondayStr;
-  filterEndDateInput.value = sundayStr;
-
-  handleFilter(); // This will update currentFilter and call renderEntries
+  filterStartDateInput.value = formatDateToInput(monday);
+  filterEndDateInput.value = formatDateToInput(sunday);
+  handleFilter();
 };
 
 // --- Firebase Data Functions ---
@@ -202,7 +205,7 @@ const loadSettings = () => {
   if (!currentUID) {
     settings = { hourlyRate: 20.0 };
     if (hourlyRateInput) hourlyRateInput.value = settings.hourlyRate.toFixed(2);
-    renderEntries(); // Render with default settings
+    renderEntries();
     return;
   }
   const settingsRef = ref(database, `users/${currentUID}/settings`);
@@ -214,14 +217,14 @@ const loadSettings = () => {
         settings = data;
         settings.hourlyRate = parseFloat(settings.hourlyRate) || 20.0;
       } else {
-        settings = { hourlyRate: 20.0 }; // Ensure settings object exists
+        settings = { hourlyRate: 20.0 };
         saveSettingsToFirebase(settings).catch((err) =>
           console.error('Failed to save initial settings:', err)
         );
       }
       if (hourlyRateInput)
         hourlyRateInput.value = settings.hourlyRate.toFixed(2);
-      renderEntries(); // Re-render entries as settings affect pay calculation
+      renderEntries();
     },
     (error) => {
       console.error('Error loading settings from Firebase:', error);
@@ -231,7 +234,7 @@ const loadSettings = () => {
         'error',
         5000
       );
-      settings = { hourlyRate: 20.0 }; // Fallback
+      settings = { hourlyRate: 20.0 };
       if (hourlyRateInput)
         hourlyRateInput.value = settings.hourlyRate.toFixed(2);
       renderEntries();
@@ -251,12 +254,12 @@ const saveSettingsToFirebase = async (newSettingsToSave) => {
   const settingsRef = ref(database, `users/${currentUID}/settings`);
   try {
     await set(settingsRef, newSettingsToSave);
-    settings = newSettingsToSave; // Update local state
+    settings = newSettingsToSave;
     showStatusMessage(
       settingsStatusSpan,
       `Rate saved: $${newSettingsToSave.hourlyRate.toFixed(2)}`
     );
-    renderEntries(); // Re-render as rate change affects pay
+    renderEntries();
   } catch (error) {
     console.error('Error saving settings to Firebase:', error);
     showStatusMessage(settingsStatusSpan, 'Error saving rate.', 'error');
@@ -278,7 +281,7 @@ const loadEntries = () => {
       entries = data
         ? Object.keys(data).map((key) => ({ id: key, ...data[key] }))
         : [];
-      renderEntries(); // Re-render after entries are loaded or changed
+      renderEntries();
     },
     (error) => {
       console.error('Error loading entries from Firebase:', error);
@@ -288,7 +291,7 @@ const loadEntries = () => {
         'error',
         5000
       );
-      entries = []; // Fallback
+      entries = [];
       renderEntries();
     }
   );
@@ -301,7 +304,6 @@ const renderEntries = () => {
   let filteredEntries = entries;
   const rate = parseFloat(settings.hourlyRate) || 0;
 
-  // Apply date filter if active
   if (currentFilter.startDate) {
     filteredEntries = filteredEntries.filter(
       (e) => e.date >= currentFilter.startDate
@@ -313,7 +315,7 @@ const renderEntries = () => {
     );
   }
 
-  // Sort entries: newest first by date, then by start time
+  // Sort entries: oldest first by date, then by start time (Mon -> Fri)
   filteredEntries.sort((a, b) => {
     const dateComparison = a.date.localeCompare(b.date);
     if (dateComparison !== 0) return dateComparison;
@@ -366,7 +368,7 @@ const renderEntries = () => {
 const clearForm = () => {
   if (editEntryIdInput) editEntryIdInput.value = '';
   if (entryDateInput)
-    entryDateInput.value = new Date().toISOString().split('T')[0]; // Default to today
+    entryDateInput.value = new Date().toISOString().split('T')[0];
   if (startTimeInput) startTimeInput.value = '';
   if (endTimeInput) endTimeInput.value = '';
   if (descriptionInput) descriptionInput.value = '';
@@ -439,7 +441,6 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
 
   const duration = calculateDuration(start, end);
   if (duration <= 0 && !(start > end)) {
-    // Allow overnight (start > end) but not zero/negative duration for same day
     showStatusMessage(
       entryStatusSpan,
       'End time must be after start time for a valid duration.',
@@ -469,7 +470,6 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
       );
     }
     clearForm();
-    // renderEntries() will be called by the onValue listener for entries
   } catch (error) {
     console.error('Error saving entry to Firebase:', error);
     showStatusMessage(entryStatusSpan, 'Error saving entry.', 'error');
@@ -495,7 +495,6 @@ const handleTableActions = async (event) => {
         await remove(entryRef);
         showStatusMessage(entryStatusSpan, 'Entry deleted.', 'success');
         if (editEntryIdInput && editEntryIdInput.value === entryId) clearForm();
-        // renderEntries() will be called by the onValue listener
       } catch (error) {
         console.error('Error deleting entry from Firebase:', error);
         showStatusMessage(entryStatusSpan, 'Error deleting entry.', 'error');
@@ -520,34 +519,94 @@ const handleFilter = () => {
   }
   currentFilter.startDate = startDateValue || null;
   currentFilter.endDate = endDateValue || null;
-  renderEntries(); // Apply filter and re-render
-  if (exportStatusSpan) {
-    // Avoid showing "Filter applied" if it was an error or initial load
-    if (!(startDateValue && endDateValue && endDateValue < startDateValue)) {
-      // Don't show "Filter applied" on initial load with default week.
-      // This message is more for user-initiated filter actions.
-      // We can refine this if a message is desired for the default load.
-    }
-  }
+  renderEntries();
+  // Message for filter application could be added here if desired,
+  // but avoiding it for programmatic changes like week navigation to reduce noise.
 };
 
-// MODIFIED: Reset filter to current week
 const handleResetFilter = () => {
-  setDefaultDateFilterToCurrentWeek(); // This sets dates and calls handleFilter -> renderEntries
-  if (exportStatusSpan) {
-    showStatusMessage(
-      exportStatusSpan,
-      'Filter reset to current week.',
-      'success',
-      1500
+  setDefaultDateFilterToCurrentWeek();
+  showStatusMessage(
+    exportStatusSpan,
+    'Filter reset to current week.',
+    'success',
+    1500
+  );
+};
+
+// --- Week Navigation Function (NEW) ---
+const navigateWeeks = (direction) => {
+  if (!filterStartDateInput || !filterEndDateInput) {
+    console.warn('Filter date inputs not found for week navigation.');
+    return;
+  }
+
+  let currentStartDateString = filterStartDateInput.value;
+  let baseDateForCalc;
+
+  if (
+    currentStartDateString &&
+    !isNaN(new Date(currentStartDateString + 'T00:00:00Z'))
+  ) {
+    // Use the current filter's start date, parsed as UTC
+    baseDateForCalc = new Date(currentStartDateString + 'T00:00:00Z');
+  } else {
+    // If no valid filter start date, base it on today (local time, then convert to UTC for calculation)
+    const todayLocal = new Date();
+    baseDateForCalc = new Date(
+      Date.UTC(
+        todayLocal.getFullYear(),
+        todayLocal.getMonth(),
+        todayLocal.getDate()
+      )
     );
   }
+
+  // Find Monday of the baseDateForCalc's week
+  const baseDay = baseDateForCalc.getUTCDay(); // 0 (Sun) to 6 (Sat)
+  const diffToMonday = baseDay === 0 ? -6 : 1 - baseDay;
+
+  // Create a new date object for Monday to avoid modifying baseDateForCalc directly
+  const mondayOfTargetWeek = new Date(
+    Date.UTC(
+      baseDateForCalc.getUTCFullYear(),
+      baseDateForCalc.getUTCMonth(),
+      baseDateForCalc.getUTCDate()
+    )
+  );
+  mondayOfTargetWeek.setUTCDate(mondayOfTargetWeek.getUTCDate() + diffToMonday);
+
+  // Move to previous or next week's Monday
+  if (direction === 'prev') {
+    mondayOfTargetWeek.setUTCDate(mondayOfTargetWeek.getUTCDate() - 7);
+  } else if (direction === 'next') {
+    mondayOfTargetWeek.setUTCDate(mondayOfTargetWeek.getUTCDate() + 7);
+  }
+
+  const sundayOfTargetWeek = new Date(
+    Date.UTC(
+      mondayOfTargetWeek.getUTCFullYear(),
+      mondayOfTargetWeek.getUTCMonth(),
+      mondayOfTargetWeek.getUTCDate()
+    )
+  );
+  sundayOfTargetWeek.setUTCDate(sundayOfTargetWeek.getUTCDate() + 6);
+
+  filterStartDateInput.value = formatDateToInput(mondayOfTargetWeek);
+  filterEndDateInput.value = formatDateToInput(sundayOfTargetWeek);
+  handleFilter(); // Apply the new filter and re-render
+
+  showStatusMessage(
+    exportStatusSpan,
+    `Filter set to ${direction === 'prev' ? 'previous' : 'next'} week.`,
+    'success',
+    1500
+  );
 };
 
 const handleExportCsv = () => {
-  let csvExportEntries = [...entries]; // Use a copy of the current entries array
+  let csvExportEntries = [...entries];
 
-  // Apply current filter to the export data
   if (currentFilter.startDate) {
     csvExportEntries = csvExportEntries.filter(
       (e) => e.date >= currentFilter.startDate
@@ -568,11 +627,11 @@ const handleExportCsv = () => {
     return;
   }
 
-  // Sort for export, consistent with display
+  // Sorting for export should match display (oldest first)
   csvExportEntries.sort((a, b) => {
-    const dateComparison = b.date.localeCompare(a.date);
+    const dateComparison = a.date.localeCompare(b.date);
     if (dateComparison !== 0) return dateComparison;
-    return b.startTime.localeCompare(a.startTime);
+    return a.startTime.localeCompare(b.startTime);
   });
 
   const rate = parseFloat(settings.hourlyRate) || 0;
@@ -596,13 +655,16 @@ const handleExportCsv = () => {
     link.setAttribute('href', url);
 
     let filename = 'work_hours_export.csv';
-    const todayStr = formatDateToInput(new Date());
+    // Using formatDateToInput which gives YYYY-MM-DD, then formatDate for user-friendly part
+    const safeFormatDateForFilename = (dateStr) =>
+      dateStr ? formatDate(dateStr).replace(/[^a-zA-Z0-9]/g, '-') : 'all';
+
     const startStr = currentFilter.startDate
-      ? formatDate(currentFilter.startDate).replace(/[^a-zA-Z0-9]/g, '-')
+      ? safeFormatDateForFilename(currentFilter.startDate)
       : 'all';
     const endStr = currentFilter.endDate
-      ? formatDate(currentFilter.endDate).replace(/[^a-zA-Z0-9]/g, '-')
-      : todayStr.replace(/[^a-zA-Z0-9]/g, '-');
+      ? safeFormatDateForFilename(currentFilter.endDate)
+      : safeFormatDateForFilename(formatDateToInput(new Date()));
 
     filename = `work_hours_${startStr}_to_${endStr}.csv`;
 
@@ -645,13 +707,12 @@ const handleSignUp = async () => {
   }
   try {
     await createUserWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle UI update, data loading, and default filter
     showStatusMessage(
       authStatusSpan,
       'Sign up successful! You are now logged in.',
       'success'
     );
-    if (passwordInput) passwordInput.value = ''; // Clear password field
+    if (passwordInput) passwordInput.value = '';
   } catch (error) {
     console.error('Sign up error:', error);
     showStatusMessage(
@@ -676,9 +737,8 @@ const handleSignIn = async () => {
   }
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle UI update, data loading, and default filter
     showStatusMessage(authStatusSpan, 'Sign in successful!', 'success');
-    if (passwordInput) passwordInput.value = ''; // Clear password field
+    if (passwordInput) passwordInput.value = '';
   } catch (error) {
     console.error('Sign in error:', error);
     showStatusMessage(
@@ -693,7 +753,6 @@ const handleSignIn = async () => {
 const handleSignOut = async () => {
   try {
     await signOut(auth);
-    // onAuthStateChanged will handle UI changes and data clearing
     showStatusMessage(authStatusSpan, 'You have been signed out.', 'success');
     if (emailInput) emailInput.value = '';
     if (passwordInput) passwordInput.value = '';
@@ -714,11 +773,8 @@ const handleAuthState = (user) => {
     currentUID = user.uid;
     console.log('Authenticated with UID:', currentUID, 'Email:', user.email);
     showAppUI(user.email);
-    loadSettings(); // Load settings first
-    loadEntries(); // Then load entries (which will call renderEntries)
-
-    // Set default filter to current week after app UI is shown.
-    // renderEntries will be called again by setDefaultDateFilterToCurrentWeek via handleFilter.
+    loadSettings();
+    loadEntries();
     setDefaultDateFilterToCurrentWeek();
   } else {
     currentUID = null;
@@ -730,10 +786,9 @@ const handleAuthState = (user) => {
 
 // --- Application Setup ---
 const setupApplication = () => {
-  showAuthUI(); // Initially show auth UI
-  clearForm(); // Set default date for entry form
+  showAuthUI();
+  clearForm();
 
-  // Attach Event Listeners
   if (saveSettingsBtn)
     saveSettingsBtn.addEventListener('click', handleSaveSettings);
   if (addEntryBtn)
@@ -749,32 +804,32 @@ const setupApplication = () => {
     resetFilterBtn.addEventListener('click', handleResetFilter);
   if (exportCsvBtn) exportCsvBtn.addEventListener('click', handleExportCsv);
 
-  // Auth Event Listeners
+  // Week navigation buttons (NEW)
+  if (prevWeekBtn)
+    prevWeekBtn.addEventListener('click', () => navigateWeeks('prev'));
+  if (nextWeekBtn)
+    nextWeekBtn.addEventListener('click', () => navigateWeeks('next'));
+
   if (signUpBtn) signUpBtn.addEventListener('click', handleSignUp);
   if (signInBtn) signInBtn.addEventListener('click', handleSignIn);
   if (signOutBtn) signOutBtn.addEventListener('click', handleSignOut);
 
-  // Add event listener for 'Enter' key on password input
   if (passwordInput) {
     passwordInput.addEventListener('keypress', (event) => {
       if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent default form submission if any
+        event.preventDefault();
         handleSignIn();
       }
     });
   }
-
-  // Add event listener for 'Enter' key on email input to move to password
   if (emailInput) {
     emailInput.addEventListener('keypress', (event) => {
       if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent default form submission
-        if (passwordInput) passwordInput.focus(); // Move focus to password input
+        event.preventDefault();
+        if (passwordInput) passwordInput.focus();
       }
     });
   }
-
-  // Listen for auth state changes - This is crucial.
   onAuthStateChanged(auth, handleAuthState);
 };
 
@@ -785,7 +840,7 @@ document.addEventListener('DOMContentLoaded', setupApplication);
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/GrindTime-WrkHrs/sw.js') // MODIFIED: Make sure this path is correct if your sw.js is in a subfolder like 'public'
+      .register('/GrindTime-WrkHrs/sw.js') // Ensure this path is correct for your deployment
       .then((registration) => {
         console.log('SW registered: ', registration);
       })
