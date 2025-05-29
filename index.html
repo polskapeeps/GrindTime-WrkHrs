@@ -35,12 +35,9 @@
       href="/GrindTime-WrkHrs/assets/icons/android-chrome-512x512.png"
       sizes="512x512"
     />
-    <!-- Manifest -->
-    <link rel="manifest" href="/GrindTime-WrkHrs/manifest.json" />
-    <!-- <<< add if needed >>>
-     <meta name="theme-color" content="#007bff" /> -->
-    <script type="module" crossorigin src="/GrindTime-WrkHrs/assets/index-CkDb4Vml.js"></script>
-    <link rel="stylesheet" crossorigin href="/GrindTime-WrkHrs/assets/css/index-BdjYFCM4.css">
+    <link rel="manifest" href="/GrindTime-WrkHrs/manifest.json" />
+    <script type="module" crossorigin src="/GrindTime-WrkHrs/assets/index-DNCmBVB3.js"></script>
+    <link rel="stylesheet" crossorigin href="/GrindTime-WrkHrs/assets/css/index-B3ym1ocQ.css">
   </head>
   <body>
     <div class="container">
@@ -147,7 +144,15 @@
               <label for="filterEndDate">Filter To:</label>
               <input type="date" id="filterEndDate" />
             </div>
-            <div class="form-actions filter-buttons">
+            <div class="week-buttons">
+              <button id="prevWeekBtn" class="btn btn-info btn-sm">
+                &lt;&lt; Prev Week
+              </button>
+              <button id="nextWeekBtn" class="btn btn-info btn-sm">
+                Next Week &gt;&gt;
+              </button>
+            </div>
+            <div class="filter-buttons">
               <button id="filterBtn" class="btn btn-primary">
                 Apply Filter
               </button>
