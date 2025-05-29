@@ -35,10 +35,7 @@
       href="/assets/icons/android-chrome-512x512.png"
       sizes="512x512"
     />
-    <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <!-- <<< add if needed >>>
-     <meta name="theme-color" content="#007bff" /> -->
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -147,19 +144,15 @@
               <input type="date" id="filterEndDate" />
             </div>
             <div class="form-actions filter-buttons">
-              <button id="prevWeekBtn" class="btn btn-info btn-sm">
-                &lt;&lt; Prev Week
-              </button>
-              <button id="nextWeekBtn" class="btn btn-info btn-sm">
-                Next Week &gt;&gt;
-              </button>
+              <button id="prevWeekBtn" class="btn btn-info btn-sm"> &lt;&lt; Prev Week </button>
+              <button id="nextWeekBtn" class="btn btn-info btn-sm"> Next Week &gt;&gt; </button>
               <button id="filterBtn" class="btn btn-primary">
                 Apply Filter
               </button>
               <button id="resetFilterBtn" class="btn btn-secondary">
                 Reset Filter
               </button>
-            </div>
+              </div>
           </div>
 
           <div class="totals-display">
@@ -206,7 +199,7 @@
       <div
         id="userStatusArea"
         class="user-status card"
-        margi
+        margi 
         style="display: none; padding: 0.75rem"
       >
         <p>Logged in as: <strong id="userEmailDisplay"></strong></p>
