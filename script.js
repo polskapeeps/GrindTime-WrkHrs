@@ -132,11 +132,16 @@ const showStatusMessage = (
   duration = 3000
 ) => {
   if (!element) return;
-  clearTimeout(statusTimeout);
+  if (element.showStatusMessageTimeout) {
+    clearTimeout(element.showStatusMessageTimeout);
+  }
   element.textContent = message;
-  element.className = `status-message ${type} show`;
-  statusTimeout = setTimeout(() => {
-    element.classList.remove('show');
+  element.classList.add(type, 'show');
+  if (!element.classList.contains('status-message')) {
+    element.classList.add('status-message');
+  }
+  element.showStatusMessageTimeout = setTimeout(() => {
+    element.classList.remove(type, 'show');
   }, duration);
 };
 
