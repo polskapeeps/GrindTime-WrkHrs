@@ -8,11 +8,11 @@
   --border-color: #081c15; /* Borders */
   --shadow-color: rgba(0, 0, 0, 0.2); /* Softer shadow for dark theme */
 
-  --accent-primary: #40916c; /* Blue */
+  --accent-primary: #40916d9b; /* Blue */
   --accent-secondary: #065a60; /* Gray */
-  --accent-success: #40916c; /* Green */
+  --accent-success: #40916d9b; /* Green */
   --accent-danger: #065a60; /* Red */
-  --accent-warning: #40916c; /* Yellow */
+  --accent-warning: #40916d9b; /* Yellow */
   --accent-text-light: #ffffff; /* Text on colored buttons */
   --accent-text-dark: #212529; /* Text on light/warning buttons */
   --accent-info: #3d554a86; /* Light blue */
