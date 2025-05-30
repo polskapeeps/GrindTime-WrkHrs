@@ -258,7 +258,7 @@ input::placeholder {
   color: var(--accent-text-dark);
 }
 .btn-info:hover {
-  background-color: #17a2b8; /* A darker shade for hover */
+  background-color: #065a60; /* A darker shade for hover */
 }
 /* ---=== Status Messages ===--- */
 .status-message {
