@@ -36,8 +36,8 @@
       sizes="512x512"
     />
     <link rel="manifest" href="/GrindTime-WrkHrs/manifest.json" />
-    <script type="module" crossorigin src="/GrindTime-WrkHrs/assets/index-DNCmBVB3.js"></script>
-    <link rel="stylesheet" crossorigin href="/GrindTime-WrkHrs/assets/css/index-B3ym1ocQ.css">
+    <script type="module" crossorigin src="/GrindTime-WrkHrs/assets/index-DaVPNuNK.js"></script>
+    <link rel="stylesheet" crossorigin href="/GrindTime-WrkHrs/assets/css/index-d55bvl8V.css">
   </head>
   <body>
     <div class="container">
@@ -77,7 +77,7 @@
           <h2>Log / Edit Time</h2>
           <input type="hidden" id="editEntryId" />
 
-          <div class="rate-setting-group form-group">
+          <div class=".rate-setting-group form-group">
             <label for="hourlyRate">Rate ($):</label>
             <input
               type="number"
@@ -134,7 +134,14 @@
         </section>
 
         <section class="card">
-          <h2>Past Entries</h2>
+          <h2>
+            Past Entries
+            <span
+              id="filterStatus"
+              class="status-message inline"
+              aria-live="polite"
+            ></span>
+          </h2>
           <div class="filter-controls">
             <div class="form-group">
               <label for="filterStartDate">Filter From:</label>
