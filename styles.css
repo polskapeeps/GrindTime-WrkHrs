@@ -290,10 +290,12 @@ rate-setting-group .status-message {
   border-color: var(--error-border-subtle);
 }
 .status-message.inline {
-  padding: calc(var(--spacing-unit) * 0.2) calc(var(--spacing-unit) * 0.4);
-  font-size: 0.75rem;
-  margin-left: calc(var(--spacing-unit) * 0.3);
+  padding: 2px 6px;
+  font-size: 0.6rem; /* Fixed size, not relative to h2 */
+  margin-left: 8px;
   vertical-align: middle;
+  border-radius: 3px;
+  display: inline-block;
 }
 h2 .status-message.inline {
   padding: calc(var(--spacing-unit) * 0.1) calc(var(--spacing-unit) * 0.2);
