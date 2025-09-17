@@ -10,6 +10,12 @@
       content="black-translucent"
     />
     <title>Grind Time</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -41,10 +47,24 @@
   <body>
     <div class="container">
       <header class="header">
-        <h1>Daily Grind</h1>
+        <div class="header-content">
+          <div class="branding">
+            <h1>Daily Grind</h1>
+            <p class="tagline">Track your hours and earnings with clarity.</p>
+          </div>
+          <div id="userStatusArea" class="user-status" style="display: none">
+            <p>
+              Logged in as:
+              <strong id="userEmailDisplay"></strong>
+            </p>
+            <button id="signOutBtn" class="btn btn-secondary btn-sm" type="button">
+              Sign Out
+            </button>
+          </div>
+        </div>
       </header>
 
-      <section id="authSection" class="card">
+      <section id="authSection" class="card auth-card">
         <h2>Sign In / Sign Up</h2>
         <div class="form-group">
           <label for="emailInput">Email:</label>
@@ -65,18 +85,22 @@
           />
         </div>
         <div class="form-actions">
-          <button id="signInBtn" class="btn btn-primary">Sign In</button>
-          <button id="signUpBtn" class="btn btn-success">Sign Up</button>
+          <button id="signInBtn" class="btn btn-primary" type="button">
+            Sign In
+          </button>
+          <button id="signUpBtn" class="btn btn-success" type="button">
+            Sign Up
+          </button>
         </div>
         <span id="authStatus" class="status-message" aria-live="polite"></span>
       </section>
 
-      <div id="mainAppContent" style="display: none">
+      <main id="mainAppContent" class="app-grid" style="display: none">
         <section id="entryFormCard" class="card">
           <h2>Log / Edit Time</h2>
           <input type="hidden" id="editEntryId" />
 
-          <div class=".rate-setting-group form-group">
+          <div class="rate-setting-group form-group">
             <label for="hourlyRate">Rate ($):</label>
             <input
               type="number"
@@ -85,7 +109,11 @@
               min="0"
               placeholder="Rate"
             />
-            <button id="saveSettingsBtn" class="btn btn-success btn-sm">
+            <button
+              id="saveSettingsBtn"
+              class="btn btn-success btn-sm"
+              type="button"
+            >
               Save
             </button>
             <span
@@ -117,11 +145,23 @@
             />
           </div>
           <div class="form-actions">
-            <button id="addEntryBtn" class="btn btn-primary">Add Entry</button>
-            <button id="updateEntryBtn" class="btn btn-warning" hidden>
+            <button id="addEntryBtn" class="btn btn-primary" type="button">
+              Add Entry
+            </button>
+            <button
+              id="updateEntryBtn"
+              class="btn btn-warning"
+              type="button"
+              hidden
+            >
               Update Entry
             </button>
-            <button id="cancelEditBtn" class="btn btn-secondary" hidden>
+            <button
+              id="cancelEditBtn"
+              class="btn btn-secondary"
+              type="button"
+              hidden
+            >
               Cancel Edit
             </button>
             <span
@@ -151,18 +191,30 @@
               <input type="date" id="filterEndDate" />
             </div>
             <div class="filter-buttons">
-              <button id="filterBtn" class="btn btn-primary">
+              <button id="filterBtn" class="btn btn-primary" type="button">
                 Apply Filter
               </button>
-              <button id="resetFilterBtn" class="btn btn-secondary">
+              <button
+                id="resetFilterBtn"
+                class="btn btn-secondary"
+                type="button"
+              >
                 Reset Filter
               </button>
             </div>
             <div class="week-buttons">
-              <button id="prevWeekBtn" class="btn btn-info btn-sm">
+              <button
+                id="prevWeekBtn"
+                class="btn btn-info btn-sm"
+                type="button"
+              >
                 &lt;&lt; Prev Week
               </button>
-              <button id="nextWeekBtn" class="btn btn-info btn-sm">
+              <button
+                id="nextWeekBtn"
+                class="btn btn-info btn-sm"
+                type="button"
+              >
                 Next Week &gt;&gt;
               </button>
             </div>
@@ -197,7 +249,11 @@
         <section class="card">
           <h2>Export Data</h2>
           <div class="form-actions">
-            <button id="exportCsvBtn" class="btn btn-primary">
+            <button
+              id="exportCsvBtn"
+              class="btn btn-primary"
+              type="button"
+            >
               Export Filtered to CSV
             </button>
             <span
@@ -207,18 +263,7 @@
             ></span>
           </div>
         </section>
-      </div>
-      <div
-        id="userStatusArea"
-        class="user-status card"
-        margi
-        style="display: none; padding: 0.75rem"
-      >
-        <p>Logged in as: <strong id="userEmailDisplay"></strong></p>
-        <button id="signOutBtn" class="btn btn-secondary btn-sm">
-          Sign Out
-        </button>
-      </div>
+      </main>
     </div>
     <script type="module" src="./script.js"></script>
   </body>

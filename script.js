@@ -93,7 +93,7 @@ const showAuthUI = () => {
 
 const showAppUI = (userEmail) => {
   if (authSection) authSection.style.display = 'none';
-  if (mainAppContent) mainAppContent.style.display = 'flex';
+  if (mainAppContent) mainAppContent.style.display = 'grid';
   if (userStatusArea) userStatusArea.style.display = 'block';
   if (userEmailDisplay && userEmail) userEmailDisplay.textContent = userEmail;
 };
@@ -135,6 +135,7 @@ const showStatusMessage = (
   if (element.showStatusMessageTimeout) {
     clearTimeout(element.showStatusMessageTimeout);
   }
+  element.classList.remove('success', 'error', 'info');
   element.textContent = message;
   element.classList.add(type, 'show');
   if (!element.classList.contains('status-message')) {
@@ -353,10 +354,10 @@ const renderEntries = () => {
       }</span></td>
         <td>${pay.toFixed(2)}</td>
         <td class="actions">
-          <button class="btn btn-warning btn-sm edit-btn" data-id="${
+          <button class="btn btn-warning btn-sm edit-btn" type="button" data-id="${
             entry.id
           }">Edit</button>
-          <button class="btn btn-danger btn-sm delete-btn" data-id="${
+          <button class="btn btn-danger btn-sm delete-btn" type="button" data-id="${
             entry.id
           }">Del</button>
         </td>
