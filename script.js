@@ -1,8 +1,10 @@
 // script.js (Root Version - Updated for Email/Password Auth & Week Filters)
 
+import './styles.css';
+
 // --- Firebase SDK Imports ---
 import { initializeApp } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics'; // Optional
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics'; // Optional
 import {
   getDatabase,
   ref,
@@ -33,7 +35,20 @@ const firebaseConfig = {
 
 // --- Initialize Firebase Services ---
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // Optional
+let analytics;
+if (typeof window !== 'undefined') {
+  isAnalyticsSupported()
+    .then((supported) => {
+      if (supported) {
+        analytics = getAnalytics(app);
+      } else {
+        console.info('Firebase analytics not supported in this environment. Skipping initialization.');
+      }
+    })
+    .catch((error) => {
+      console.warn('Firebase analytics failed to initialize:', error);
+    });
+}
 const database = getDatabase(app);
 const auth = getAuth(app);
 
@@ -855,3 +870,5 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+
