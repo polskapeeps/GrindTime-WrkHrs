@@ -39,7 +39,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build:gh && gh-pages -d dist",
+    "build:gh": "cross-env BASE_PATH=/GrindTime-WrkHrs/ vite build"
   },
   "repository": {
     "type": "git",
@@ -53,6 +54,7 @@
   "homepage": "https://github.com/polskapeeps/GrindTime-WrkHrs/#readme",
   "devDependencies": {
     "gh-pages": "^6.3.0",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "cross-env": "^7.0.3"
   }
 }

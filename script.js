@@ -1,4 +1,4 @@
-// script.js (Root Version - Updated for Email/Password Auth & Week Filters)
+﻿// script.js (Root Version - Updated for Email/Password Auth & Week Filters)
 
 import './styles.css';
 
@@ -860,8 +860,16 @@ document.addEventListener('DOMContentLoaded', setupApplication);
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    const rawBaseUrl =
+      (typeof import.meta !== 'undefined' &&
+        import.meta.env &&
+        import.meta.env.BASE_URL) ||
+      '/';
+    const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+    const swUrl = `${baseUrl}sw.js`;
+
     navigator.serviceWorker
-      .register('/GrindTime-WrkHrs/sw.js') // Ensure this path is correct for your deployment
+      .register(swUrl)
       .then((registration) => {
         console.log('SW registered: ', registration);
       })
@@ -870,5 +878,7 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+
 
 

@@ -1,83 +1,84 @@
-// sw.js - Fixed Service Worker for Grind Time PWA
-const CACHE_NAME = 'grind-time-v1.3';
-const BASE_PATH = '/GrindTime-WrkHrs/';
+﻿// sw.js - Adaptive Service Worker for Grind Time PWA
+const scopeReference = self.registration?.scope
+  ? new URL(self.registration.scope)
+  : new URL(self.location.href);
 
-// Core app files to cache (fixed variable name)
-const STATIC_CACHE = [BASE_PATH, BASE_PATH + 'index.html'];
+const resolveBasePath = (pathname) => {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
 
-// Install event - cache resources
+  return pathname.endsWith('/') ? pathname : `${pathname}/`;
+};
+
+const BASE_PATH = resolveBasePath(scopeReference.pathname);
+const cacheSuffix = BASE_PATH.replace(/[^a-z0-9_-]+/gi, '_');
+const CACHE_NAME = `grind-time-v1.3::${cacheSuffix}`;
+
+const STATIC_CACHE = [
+  `${BASE_PATH}`,
+  `${BASE_PATH}index.html`,
+  `${BASE_PATH}manifest.json`,
+];
+
+const resolveAppPath = (candidate) => {
+  if (!candidate) {
+    return null;
+  }
+
+  try {
+    const resolved = new URL(candidate, scopeReference);
+    if (resolved.origin !== scopeReference.origin) {
+      return null;
+    }
+
+    return resolved.pathname.startsWith(BASE_PATH) ? resolved.pathname : null;
+  } catch (error) {
+    console.warn('Service worker could not resolve asset path:', candidate, error);
+    return null;
+  }
+};
+
+const collectAssetUrls = (html) => {
+  const assets = new Set();
+
+  const addMatch = (regex) => {
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const path = resolveAppPath(match[1]);
+      if (path) {
+        assets.add(path);
+      }
+    }
+  };
+
+  addMatch(/href="([^"]*\.css)"/gi);
+  addMatch(/src="([^"]*\.js)"/gi);
+  addMatch(/href="([^"]*manifest[^"]*)"/gi);
+  addMatch(/href="([^"]*\.(png|ico|svg|webp))"/gi);
+
+  return Array.from(assets);
+};
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      console.log('Opened cache');
+      console.log('Opened cache with scope:', CACHE_NAME);
 
-      // Cache static files first
       await cache.addAll(STATIC_CACHE);
 
-      // Try to fetch and cache the index.html to discover asset URLs
       try {
-        const response = await fetch(BASE_PATH + 'index.html');
+        const response = await fetch(`${BASE_PATH}index.html`);
         const html = await response.text();
 
-        // Extract asset URLs from the HTML
-        const assetUrls = [];
+        const assetUrls = collectAssetUrls(html);
 
-        // Match CSS files
-        const cssMatches = html.match(/href="([^"]*\.css)"/g);
-        if (cssMatches) {
-          cssMatches.forEach((match) => {
-            const url = match.match(/href="([^"]*)"/)[1];
-            if (url.startsWith('/GrindTime-WrkHrs/') || url.startsWith('./')) {
-              // Convert relative to absolute
-              const absoluteUrl = url.startsWith('./')
-                ? BASE_PATH + url.slice(2)
-                : url;
-              assetUrls.push(absoluteUrl);
-            }
-          });
-        }
-
-        // Match JS files
-        const jsMatches = html.match(/src="([^"]*\.js)"/g);
-        if (jsMatches) {
-          jsMatches.forEach((match) => {
-            const url = match.match(/src="([^"]*)"/)[1];
-            if (url.startsWith('/GrindTime-WrkHrs/') || url.startsWith('./')) {
-              const absoluteUrl = url.startsWith('./')
-                ? BASE_PATH + url.slice(2)
-                : url;
-              assetUrls.push(absoluteUrl);
-            }
-          });
-        }
-
-        // Match manifest
-        const manifestMatch = html.match(/href="([^"]*manifest[^"]*)"/);
-        if (manifestMatch) {
-          const url = manifestMatch[1];
-          const absoluteUrl = url.startsWith('/') ? url : BASE_PATH + url;
-          assetUrls.push(absoluteUrl);
-        }
-
-        // Match icons
-        const iconMatches = html.match(/href="([^"]*\.(png|ico))"/g);
-        if (iconMatches) {
-          iconMatches.forEach((match) => {
-            const url = match.match(/href="([^"]*)"/)[1];
-            if (url.startsWith('/')) {
-              assetUrls.push(url);
-            }
-          });
-        }
-
-        // Cache discovered assets
         if (assetUrls.length > 0) {
           console.log('Caching discovered assets:', assetUrls);
           try {
             await cache.addAll(assetUrls);
           } catch (error) {
             console.warn('Some assets failed to cache:', error);
-            // Try to cache them individually
             for (const url of assetUrls) {
               try {
                 await cache.add(url);
@@ -93,14 +94,16 @@ self.addEventListener('install', (event) => {
     })
   );
 
-  // force the SW to take control immediately
   self.skipWaiting();
 });
 
-// Fetch event - serve from cache with network fallback
 self.addEventListener('fetch', (event) => {
-  // Only handle requests for our app
-  if (!event.request.url.startsWith(self.location.origin + BASE_PATH)) {
+  const requestUrl = new URL(event.request.url);
+
+  if (
+    requestUrl.origin !== scopeReference.origin ||
+    !requestUrl.pathname.startsWith(BASE_PATH)
+  ) {
     return;
   }
 
@@ -112,42 +115,35 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
 
-        // If not in cache, fetch from network
-        return fetch(event.request).then((response) => {
-          // Don't cache non-successful responses
+        return fetch(event.request).then((networkResponse) => {
           if (
-            !response ||
-            response.status !== 200 ||
-            response.type !== 'basic'
+            !networkResponse ||
+            networkResponse.status !== 200 ||
+            networkResponse.type !== 'basic'
           ) {
-            return response;
+            return networkResponse;
           }
 
-          // Clone the response since it can only be consumed once
-          const responseToCache = response.clone();
+          const responseToCache = networkResponse.clone();
 
-          // Add to cache for future use
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
 
-          return response;
+          return networkResponse;
         });
       })
       .catch(() => {
-        // If both cache and network fail, return offline page for navigation
         if (event.request.destination === 'document') {
-          return caches.match(BASE_PATH + 'index.html');
+          return caches.match(`${BASE_PATH}index.html`);
         }
       })
   );
 });
 
-// Activate event - remove old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      // Clean up old caches
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
@@ -158,7 +154,6 @@ self.addEventListener('activate', (event) => {
           })
         );
       }),
-      // Take control of all clients immediately
       self.clients.claim(),
     ])
   );
