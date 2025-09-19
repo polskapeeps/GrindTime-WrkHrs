@@ -93,6 +93,9 @@ const filterStatusSpan = document.getElementById('filterStatus');
 const prevWeekBtn = document.getElementById('prevWeekBtn');
 const nextWeekBtn = document.getElementById('nextWeekBtn');
 
+const DEFAULT_START_TIME = '08:00';
+const DEFAULT_END_TIME = '16:00';
+
 // --- State Variables ---
 let entries = [];
 let settings = { hourlyRate: 20.0 }; // Default rate
@@ -391,8 +394,8 @@ const clearForm = () => {
   if (editEntryIdInput) editEntryIdInput.value = '';
   if (entryDateInput)
     entryDateInput.value = new Date().toISOString().split('T')[0];
-  if (startTimeInput) startTimeInput.value = '';
-  if (endTimeInput) endTimeInput.value = '';
+  if (startTimeInput) startTimeInput.value = DEFAULT_START_TIME;
+  if (endTimeInput) endTimeInput.value = DEFAULT_END_TIME;
   if (descriptionInput) descriptionInput.value = '';
   if (addEntryBtn) addEntryBtn.hidden = false;
   if (updateEntryBtn) updateEntryBtn.hidden = true;
