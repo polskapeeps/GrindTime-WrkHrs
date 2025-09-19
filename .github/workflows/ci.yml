@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [node, python]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: matrix.language == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install (Node)
+        if: matrix.language == 'node'
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          fi
+
+      - name: Lint/Typecheck (Node)
+        if: matrix.language == 'node'
+        run: |
+          npm run lint --if-present
+          npm run typecheck --if-present
+
+      - name: Test (Node)
+        if: matrix.language == 'node'
+        run: |
+          npm test --if-present -- --coverage
+
+      - name: Setup Python
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install (Python)
+        if: matrix.language == 'python'
+        run: |
+          if [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install coverage || true
+          fi
+
+      - name: Lint/Typecheck (Python)
+        if: matrix.language == 'python'
+        run: |
+          if command -v ruff >/dev/null 2>&1; then ruff check . || true; fi
+          if command -v mypy >/dev/null 2>&1; then mypy . || true; fi
+
+      - name: Test (Python)
+        if: matrix.language == 'python'
+        run: |
+          if [ -f pytest.ini ] || [ -f pyproject.toml ]; then
+            pytest -q --maxfail=1 --disable-warnings --cov .
+          fi
+
+      - name: Security & Secrets
+        run: |
+          npx -y @aquasecurity/trivy fs --exit-code 1 --severity HIGH,CRITICAL . || true
+          npx -y gitleaks detect --no-banner || true

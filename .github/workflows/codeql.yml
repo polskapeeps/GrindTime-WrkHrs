@@ -1,0 +1,19 @@
+name: "CodeQL (optional)"
+on:
+  workflow_dispatch: {}
+  # enable on schedule if wanted:
+  # schedule:
+  #   - cron: '0 3 * * 1'
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript,python
+      - uses: github/codeql-action/analyze@v3
