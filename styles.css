@@ -311,34 +311,63 @@ input:-webkit-autofill:focus {
 
 .rate-setting-group {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
   align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing-xs) * 0.6);
 }
 
 .rate-setting-group label {
   margin-bottom: 0;
-  flex-basis: 100px;
-  flex-grow: 0;
+  flex: 0 0 auto;
+  font-size: 0.95rem;
 }
 
 .rate-setting-group input#hourlyRate {
   width: auto;
-  flex: 1 1 120px;
-  max-width: 140px;
-  min-height: 42px;
+  flex: 0 0 112px;
+  max-width: 112px;
+  padding: 0.4rem 0.65rem;
+  min-height: 0;
 }
 
 .rate-setting-group .btn-sm {
   flex: 0 0 auto;
+  padding: 0.35rem 0.75rem;
+  min-height: 34px;
 }
 
 .rate-setting-group .status-message {
-  flex: 1 1 160px;
-  margin-left: auto;
-  text-align: right;
+  flex: 1 1 100%;
+  margin-left: 0;
+  text-align: left;
+  font-size: 0.85rem;
+  padding-top: 2px;
 }
 
+@media (max-width: 600px) {
+  .rate-setting-group {
+    gap: calc(var(--spacing-xs) * 0.5);
+  }
+
+  .rate-setting-group label {
+    flex: 1 1 100%;
+  }
+
+  .rate-setting-group input#hourlyRate,
+  .rate-setting-group .btn-sm {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+
+  .rate-setting-group .btn-sm {
+    justify-content: center;
+  }
+
+  .rate-setting-group .status-message {
+    text-align: left;
+  }
+}
 .btn {
   position: relative;
   display: inline-flex;
@@ -676,3 +705,4 @@ input:-webkit-autofill:focus {
     scroll-behavior: auto !important;
   }
 }
+
