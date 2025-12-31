@@ -101,6 +101,8 @@ let entries = [];
 let settings = { hourlyRate: 20.0 }; // Default rate
 let currentFilter = { startDate: null, endDate: null };
 let statusTimeout = null;
+let unsubscribeSettings = null;
+let unsubscribeEntries = null;
 
 // --- UI Update Functions ---
 const showAuthUI = () => {
@@ -227,6 +229,12 @@ const setDefaultDateFilterToCurrentWeek = () => {
 
 // --- Firebase Data Functions ---
 const loadSettings = () => {
+  // Unsubscribe from previous listener to prevent memory leaks
+  if (unsubscribeSettings) {
+    unsubscribeSettings();
+    unsubscribeSettings = null;
+  }
+
   if (!currentUID) {
     settings = { hourlyRate: 20.0 };
     if (hourlyRateInput) hourlyRateInput.value = settings.hourlyRate.toFixed(2);
@@ -234,7 +242,7 @@ const loadSettings = () => {
     return;
   }
   const settingsRef = ref(database, `users/${currentUID}/settings`);
-  onValue(
+  unsubscribeSettings = onValue(
     settingsRef,
     (snapshot) => {
       const data = snapshot.val();
@@ -293,13 +301,19 @@ const saveSettingsToFirebase = async (newSettingsToSave) => {
 };
 
 const loadEntries = () => {
+  // Unsubscribe from previous listener to prevent memory leaks
+  if (unsubscribeEntries) {
+    unsubscribeEntries();
+    unsubscribeEntries = null;
+  }
+
   if (!currentUID) {
     entries = [];
     renderEntries();
     return;
   }
   const entriesDbRef = ref(database, `users/${currentUID}/entries`);
-  onValue(
+  unsubscribeEntries = onValue(
     entriesDbRef,
     (snapshot) => {
       const data = snapshot.val();
@@ -393,7 +407,7 @@ const renderEntries = () => {
 const clearForm = () => {
   if (editEntryIdInput) editEntryIdInput.value = '';
   if (entryDateInput)
-    entryDateInput.value = new Date().toISOString().split('T')[0];
+    entryDateInput.value = formatDateToInput(new Date());
   if (startTimeInput) startTimeInput.value = DEFAULT_START_TIME;
   if (endTimeInput) endTimeInput.value = DEFAULT_END_TIME;
   if (descriptionInput) descriptionInput.value = '';
@@ -428,10 +442,10 @@ const handleSaveSettings = async () => {
     return;
   }
   const rateValue = parseFloat(hourlyRateInput.value);
-  if (isNaN(rateValue) || rateValue < 0) {
+  if (isNaN(rateValue) || rateValue < 0 || rateValue > 10000) {
     showStatusMessage(
       settingsStatusSpan,
-      'Invalid rate. Please enter a positive number.',
+      'Rate must be between $0 and $10,000.',
       'error'
     );
     if (hourlyRateInput) hourlyRateInput.focus();
@@ -465,7 +479,7 @@ const handleAddOrUpdateEntry = async (isUpdate = false) => {
   }
 
   const duration = calculateDuration(start, end);
-  if (duration <= 0 && !(start > end)) {
+  if (duration <= 0) {
     showStatusMessage(
       entryStatusSpan,
       'End time must be after start time for a valid duration.',
@@ -670,7 +684,7 @@ const handleExportCsv = () => {
       : '';
     csvContent += `${entry.date},${entry.startTime},${
       entry.endTime
-    },${duration.toFixed(3)},${escapedDesc},${pay.toFixed(2)}\n`;
+    },${duration.toFixed(2)},${escapedDesc},${pay.toFixed(2)}\n`;
   });
 
   try {
@@ -712,12 +726,22 @@ const handleExportCsv = () => {
 
 // --- Authentication Event Handlers ---
 const handleSignUp = async () => {
-  const email = emailInput.value;
+  const email = emailInput.value.trim();
   const password = passwordInput.value;
   if (!email || !password) {
     showStatusMessage(
       authStatusSpan,
       'Email and password are required.',
+      'error'
+    );
+    return;
+  }
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showStatusMessage(
+      authStatusSpan,
+      'Please enter a valid email address.',
       'error'
     );
     return;
@@ -750,12 +774,22 @@ const handleSignUp = async () => {
 };
 
 const handleSignIn = async () => {
-  const email = emailInput.value;
+  const email = emailInput.value.trim();
   const password = passwordInput.value;
   if (!email || !password) {
     showStatusMessage(
       authStatusSpan,
       'Email and password are required.',
+      'error'
+    );
+    return;
+  }
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showStatusMessage(
+      authStatusSpan,
+      'Please enter a valid email address.',
       'error'
     );
     return;
